@@ -1,25 +1,47 @@
 import type { ProfileQrStyle, QrCornerStyle } from "@/lib/profile-qr";
+import { normalizeQrSettings } from "@/lib/qr-settings";
 
 /**
  * The /qr generator keeps its style in page state; the profile-hub picker sits
- * deep inside the form. This tiny bridge lets the picker's "Opslaan" read the
- * design currently on screen without threading props through every layer.
+ * deep inside the form. This bridge lets the picker's "Opslaan" read the full
+ * design currently on screen (fill, shapes, corners, logo).
  */
-let current: { fgColor: string; bgColor: string; dotStyle: string } | null = null;
+export interface GeneratorDesign {
+  fgColor: string;
+  bgColor: string;
+  dotStyle: string;
+  outerCornerStyle?: string;
+  innerCornerStyle?: string;
+  bgGradient?: string | null;
+  logo?: string | null;
+}
 
-export function publishQrDesign(design: { fgColor: string; bgColor: string; dotStyle: string }): void {
+let current: GeneratorDesign | null = null;
+
+export function publishQrDesign(design: GeneratorDesign): void {
   current = design;
 }
 
 const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
 /** Maps generator styling onto the profile QR style stored in display_prefs.qrSettings. */
-export function toProfileQrStyle(design: { fgColor: string; bgColor: string; dotStyle: string } | null): ProfileQrStyle {
+export function toProfileQrStyle(design: GeneratorDesign | null): ProfileQrStyle {
   const fg = design && HEX.test(design.fgColor) ? design.fgColor : "#1A1A1A";
   const bg = design && HEX.test(design.bgColor) ? design.bgColor : "#FFFFFF";
   const dot = design?.dotStyle ?? "square";
   const cornerStyle: QrCornerStyle = dot === "dots" ? "dots" : /round|classy/.test(dot) ? "smooth" : "square";
-  return { fgColor: fg, bgColor: bg, cornerStyle, emblem: true };
+  const raw = {
+    fgColor: fg,
+    bgColor: bg,
+    cornerStyle,
+    emblem: false,
+    dotStyle: dot,
+    outerCornerStyle: design?.outerCornerStyle,
+    innerCornerStyle: design?.innerCornerStyle,
+    bgGradient: design?.bgGradient ?? null,
+    logo: design?.logo ?? null,
+  };
+  return normalizeQrSettings(raw) ?? { fgColor: fg, bgColor: bg, cornerStyle, emblem: false };
 }
 
 export function currentProfileQrStyle(): ProfileQrStyle {
