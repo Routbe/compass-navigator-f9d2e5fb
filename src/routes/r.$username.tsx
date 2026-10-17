@@ -20,7 +20,7 @@ function ReferralLanding() {
   useEffect(() => {
     storeReferrer(handle);
     // Privacy: the referrer handle stays on this device only — nothing is logged.
-    void navigate({ to: "/$username", params: { username: handle }, replace: true });
+    void navigate({ to: "/about", search: { ref: handle } as never, replace: true });
   }, [handle, navigate]);
 
   return (

@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { captureReferralFromUrl } from "@/lib/referral";
 import { EyeOff, Globe2, Lock } from "lucide-react";
 import {
   ArrowRight,
@@ -338,6 +339,11 @@ const CARD = "rounded-3xl border border-border/80 bg-card/90 p-6 shadow-sm sm:p-
 
 export default function About({ stats = null, reviews = [] }: { stats?: CommunityStats | null; reviews?: CommunityReview[] }) {
   const { t } = useI18n();
+  const [invitedBy, setInvitedBy] = useState<string | null>(null);
+  useEffect(() => {
+    // Uitnodiging komt via de link (`/about?ref=<handle>`); bewaard tot registratie.
+    setInvitedBy(captureReferralFromUrl());
+  }, []);
   const pillars = [
     { icon: Youtube, label: t("about.pillars.youtube") },
     { icon: Code2, label: t("about.pillars.code") },
@@ -358,6 +364,11 @@ export default function About({ stats = null, reviews = [] }: { stats?: Communit
 
   return (
     <AppLayout crumbs={[{ label: t("about.crumb") }]} trustBadges>
+      {invitedBy && (
+        <div className="mx-auto mt-3 w-fit rounded-full border border-border bg-muted px-4 py-1.5 text-xs font-medium">
+          Uitgenodigd door @{invitedBy}
+        </div>
+      )}
       {/* pb-28 houdt de laatste CTA vrij van de footer en de zwevende knop */}
       <div className="mx-auto max-w-5xl px-4 py-12 pb-28 sm:px-6 sm:py-20">
         {/* Manifest: alleen typografie, geen telefoon of carrousel. */}
