@@ -1,0 +1,32 @@
+# Roadmap
+- [ ] Uploaded gift/credential brief: db/99 prepared, awaiting exact Neon change confirmation; badge implementation and API still pending
+- [ ] Admin gifts: new fixed/percentage form, private username lookup, preview, resend and mail-status handling implemented; real admin-session creation and mail delivery unverified
+- [ ] Badges: keep admin navigation in portal, normalize website links and suggest editable artwork accent colors
+- [ ] Issued credentials: hidden-by-default awards, linked issuer attribution, recipient mark/badge controls and email notices
+- [ ] Developer issuance: authorized organization-owned badges, certificates/diplomas and idempotent username-based integration
+- [x] Database connection + app secrets
+- [x] P1 AddComponentModal search + socials
+- [x] P2 Live integrations in hub
+- [x] P3 Admin OAuth apps tabs
+- [x] P4 Badge transparency; alias inherits Pro
+- [x] P5 Studio presets, style options, scroll stability
+- [ ] Snapchat in Live Integraties hub (separate storage)
+- [x] Featured profile OG previews on Explore
+- [x] Public profile badges and action-dialog translations
+- [ ] Platform-wide hardcoded text audit and translation cleanup (profile + explore done; dashboard/studio/admin open)
+- [ ] Browser verification of Snapchat and profile previews
+- [x] Snapchat client credentials saved securely
+- [ ] Optional sign-in/email/storage/payment keys (Google, Brevo, Scaleway, Stripe) — waits on user
+- [x] Hub: single "Component toevoegen", social tabs, new platforms, YouTube as normal component, remove Totaal bereik, Badges & diploma's folder
+- [x] Social block: expandable settings, connect account, green verified mark, followers toggle
+- [x] Workspace switcher only with other workspaces (always in console) + console onboarding tour
+- [ ] ROUT login redirect-URI error: fixes done; root cause waits on a real failing example from the user
+- [ ] i18n batch 2: auth flows — translated existing screens and settings; signed-in/email delivery verification waits on an active ROUT session
+- [ ] i18n batch 2: Studio/dashboard — primary editor, link/status controls and profile settings translated; remaining specialized panels need a follow-up pass, signed-in verification waits on an active ROUT session
+- [ ] AI bio polish & translate (profile_descriptions jsonb in Neon) + language switcher in app nav
+- [ ] Uploaded briefs (education components, community messages, identity/OAuth architecture) — not started, awaiting go-ahead
+- [x] Zero-trust bio verification (rout.be/<username> link, Chess.com, verified date)
+- [ ] Bio verification QA in Studio (signed in): modal, spinners, toasts — strict regex only, no AI
+- [x] Audit line under verified accounts: "Geverifieerd op <datum> via Platform Login / Bio-link"
+- [x] Admin: verify users directly (Pro / Influencer / Business) + Conversie Coach mobile button
+- [ ] Smart media autocomplete briefs (2 uploads) — not started, awaiting go-ahead
