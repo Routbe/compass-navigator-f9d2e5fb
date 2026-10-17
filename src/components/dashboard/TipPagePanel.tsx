@@ -12,6 +12,10 @@ import { Textarea } from "@/components/ui/textarea";
 const ImageCropDialog = lazy(() => import("@/components/dashboard/ImageCropDialog").then((m) => ({ default: m.ImageCropDialog })));
 import { deleteMyPspKey, getMyTipSetup, saveMyPspKey, saveMyTipSettings, uploadTipImage } from "@/lib/tip-page.functions";
 import { isValidIban } from "@/lib/epc-qr";
+import { TipExtrasPanel } from "@/components/dashboard/TipExtrasPanel";
+import { TIP_TOUR_KEY, TipTour } from "@/components/dashboard/TipTour";
+import { compressToWebp } from "@/lib/image-compress";
+import { STRIPE_FULL_KEY_ERROR, TIP_MAX_IMAGES, checkStripeKey } from "@/lib/tip-rules";
 
 type Setup = Awaited<ReturnType<typeof getMyTipSetup>>;
 type Settings = NonNullable<Setup["settings"]>;
@@ -27,8 +31,12 @@ const toB64 = (b: Blob) =>
 const PSP_GUIDE = {
   stripe: {
     name: "Stripe",
-    steps: ["Log in op dashboard.stripe.com.", "Ga naar Ontwikkelaars → API-sleutels.", "Maak bij voorkeur een beperkte sleutel (rk_live_…) met schrijfrecht op Checkout Sessions, of kopieer de geheime sleutel (sk_live_…)."],
-    placeholder: "sk_live_… of rk_live_…",
+    steps: [
+      "Log in op dashboard.stripe.com en open Ontwikkelaars → API-sleutels.",
+      "Kies 'Beperkte sleutel aanmaken' en geef enkel 'Write' op PaymentIntents. Volledige secret keys (sk_…) weigeren we.",
+      "Kopieer de Restricted Key (rk_live_…) én je publishable key (pk_live_…).",
+    ],
+    placeholder: "rk_live_…",
   },
   mollie: {
     name: "Mollie",
@@ -47,6 +55,7 @@ export function TipPagePanel() {
   const [presetText, setPresetText] = useState("5, 10, 25");
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [tour, setTour] = useState(false);
 
   const refresh = () =>
     load()
@@ -105,6 +114,10 @@ export function TipPagePanel() {
 
   return (
     <div className="space-y-6">
+      {tour && <TipTour onDone={() => setTour(false)} />}
+      <button type="button" className="text-xs text-muted-foreground underline-offset-4 hover:underline" onClick={() => setTour(true)}>
+        Rondleiding opnieuw bekijken
+      </button>
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-3">
         <code className="text-xs">rout.be/{handle}/tip</code>
         <div className="flex items-center gap-3">
@@ -114,7 +127,20 @@ export function TipPagePanel() {
             </a>
           </Button>
           <label className="flex items-center gap-2 text-sm">
-            <Switch checked={s.enabled} onCheckedChange={(v) => set("enabled", v)} /> Actief
+            <Switch
+              checked={s.enabled}
+              onCheckedChange={(v) => {
+                set("enabled", v);
+                let seen = false;
+                try {
+                  seen = window.localStorage.getItem(TIP_TOUR_KEY) === "1";
+                } catch {
+                  /* geen opslag */
+                }
+                if (v && !seen) setTour(true);
+              }}
+            />{" "}
+            Actief
           </label>
         </div>
       </div>
@@ -160,7 +186,7 @@ export function TipPagePanel() {
       </section>
 
       <section className="space-y-3">
-        <h4 className="text-sm font-medium">Afbeeldingen ({s.imageUrls.length}/3)</h4>
+        <h4 className="text-sm font-medium">Foto's ({s.imageUrls.length}/{TIP_MAX_IMAGES})</h4>
         <div className="grid grid-cols-3 gap-2">
           {s.imageUrls.map((u) => (
             <div key={u} className="relative">
@@ -170,7 +196,7 @@ export function TipPagePanel() {
               </button>
             </div>
           ))}
-          {s.imageUrls.length < 3 && (
+          {s.imageUrls.length < TIP_MAX_IMAGES && (
             <label className="grid aspect-[4/3] cursor-pointer place-items-center rounded-xl border border-dashed border-border text-muted-foreground hover:border-foreground/40">
               <ImagePlus className="h-5 w-5" aria-hidden />
               <span className="sr-only">Afbeelding toevoegen</span>
@@ -192,12 +218,31 @@ export function TipPagePanel() {
           onCancel={() => setCropSrc(null)}
           onDone={async (blob) => {
             setCropSrc(null);
-            const res = await upload({ data: { base64: await toB64(blob) } }).catch(() => null);
-            if (res?.ok) set("imageUrls", [...s.imageUrls, res.url].slice(0, 3));
+            // Automatisch verkleind (max 2000 px, WebP) — zichtbaar even scherp, veel kleiner.
+            const small = await compressToWebp(blob).catch(() => blob);
+            const res = await upload({ data: { base64: await toB64(small) } }).catch(() => null);
+            if (res?.ok) set("imageUrls", [...s.imageUrls, res.url].slice(0, TIP_MAX_IMAGES));
             else toast.error(res && !res.ok ? res.message : "Upload mislukt");
           }}
         /></Suspense>)}
       </section>
+
+      <div className="flex flex-wrap gap-1.5">
+        {s.imageUrls.length > 1 &&
+          s.imageUrls.map((u, i) =>
+            i > 0 ? (
+              <button key={u} type="button" className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground" onClick={() => {
+                const next = [...s.imageUrls];
+                [next[i - 1], next[i]] = [next[i]!, next[i - 1]!];
+                set("imageUrls", next);
+              }}>
+                Foto {i + 1} naar voren
+              </button>
+            ) : null,
+          )}
+      </div>
+
+      <TipExtrasPanel settings={s} onChange={(patch) => setS((p) => (p ? { ...p, ...patch } : p))} />
 
       <Button onClick={() => void onSave()} disabled={busy || !ibanOk}>
         {busy && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />} Opslaan
@@ -223,6 +268,8 @@ function PspPanel({ psp, isBusiness, onChanged }: { psp: Setup["psp"]; isBusines
   const del = useServerFn(deleteMyPspKey);
   const [provider, setProvider] = useState<"stripe" | "mollie">("mollie");
   const [secret, setSecret] = useState("");
+  const [pk, setPk] = useState("");
+  const stripeError = provider === "stripe" && secret.trim().length > 6 ? (/^sk_/.test(secret.trim()) ? STRIPE_FULL_KEY_ERROR : checkStripeKey(secret).ok ? null : null) : null;
   const [accept, setAccept] = useState(false);
   const [busy, setBusy] = useState(false);
   const guide = PSP_GUIDE[provider];
@@ -270,6 +317,13 @@ function PspPanel({ psp, isBusiness, onChanged }: { psp: Setup["psp"]; isBusines
       <div>
         <Label htmlFor="psp-secret">Geheime sleutel</Label>
         <Input id="psp-secret" type="password" autoComplete="off" value={secret} onChange={(e) => setSecret(e.target.value)} placeholder={guide.placeholder} />
+        {stripeError && <p role="alert" className="mt-1 text-xs text-destructive">{stripeError}</p>}
+        {provider === "stripe" && (
+          <div className="mt-2">
+            <Label htmlFor="psp-pk">Publishable key</Label>
+            <Input id="psp-pk" autoComplete="off" value={pk} onChange={(e) => setPk(e.target.value)} placeholder="pk_live_…" />
+          </div>
+        )}
         <p className="mt-1 text-[11px] text-muted-foreground">Wordt gecontroleerd bij {guide.name} en daarna versleuteld bewaard. Je ziet hem nooit meer terug, enkel de laatste 4 tekens.</p>
       </div>
       <label className="flex items-start gap-2 text-xs">
@@ -278,14 +332,15 @@ function PspPanel({ psp, isBusiness, onChanged }: { psp: Setup["psp"]; isBusines
       </label>
       <Button
         size="sm"
-        disabled={!accept || secret.trim().length < 10 || busy}
+        disabled={!accept || secret.trim().length < 10 || busy || !!stripeError || (provider === "stripe" && !checkStripeKey(secret).ok)}
         onClick={async () => {
           setBusy(true);
-          const res = await saveKey({ data: { provider, secret, acceptDisclaimer: true } }).catch(() => null);
+          const res = await saveKey({ data: { provider, secret, publishableKey: provider === "stripe" ? pk : undefined, acceptDisclaimer: true } }).catch(() => null);
           setBusy(false);
           if (res?.ok) {
             toast.success(`${guide.name} gekoppeld`);
             setSecret("");
+            setPk("");
             onChanged();
           } else toast.error(res && !res.ok ? res.message : "Koppelen mislukt");
         }}

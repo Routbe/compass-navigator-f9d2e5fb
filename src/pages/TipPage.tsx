@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useParams, useSearch } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { QRCodeSVG } from "qrcode.react";
@@ -10,7 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/UserAvatar";
 import { buildEpcPayload } from "@/lib/epc-qr";
-import { getPublicTipPage, startTipPayment } from "@/lib/tip-page.functions";
+import { fetchTipSocialImages, getPublicTipPage, startTipPayment } from "@/lib/tip-page.functions";
+import { ExternalTipButton } from "@/components/tip/ExternalTipButton";
+import { proxied } from "@/lib/image-proxy-rules";
+import { TIP_MAX_IMAGES } from "@/lib/tip-rules";
+const StripeEmbeddedPay = lazy(() => import("@/components/tip/StripeEmbeddedPay"));
 import { sanitizeHandleInput } from "@/lib/validations/sanitizeHandle";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +61,17 @@ export default function TipPage() {
   const [amount, setAmount] = useState<number | null>(null);
   const [custom, setCustom] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [embedded, setEmbedded] = useState<{ clientSecret: string; publishableKey: string; returnUrl: string } | null>(null);
+  const [socialImgs, setSocialImgs] = useState<string[]>([]);
+  const loadSocial = useServerFn(fetchTipSocialImages);
+  useEffect(() => {
+    const src = page?.socialSource;
+    if (!src) return setSocialImgs([]);
+    if (src.mode === "picked") return setSocialImgs(src.picked);
+    void loadSocial({ data: { network: src.network, handle: src.handle } })
+      .then((r) => setSocialImgs(r.ok ? r.images.map((i) => i.url) : []))
+      .catch(() => setSocialImgs([]));
+  }, [page, loadSocial]);
 
   useEffect(() => {
     let alive = true;
@@ -108,6 +123,8 @@ export default function TipPage() {
   }
 
   const title = page.displayName || `@${page.handle}`;
+  const photos = [...page.imageUrls, ...socialImgs.map((u) => proxied(u)).filter((u): u is string => !!u)].slice(0, TIP_MAX_IMAGES);
+  const order = page.methods.filter((m) => m.enabled).map((m) => m.id);
   const pay = async (method: "card" | "bancontact" | "wero") => {
     if (tooLow) return toast.error(`Minimum is ${euro(page.minCents)}.`);
     setBusy(method);
@@ -115,7 +132,8 @@ export default function TipPage() {
       data: { handle: page.handle, amountCents: cents, method, origin: window.location.origin, altcha: await takeProof() },
     }).catch(() => null);
     setBusy(null);
-    if (res?.ok) window.location.href = res.url;
+    if (res?.ok && "embedded" in res && res.embedded) setEmbedded(res.embedded);
+    else if (res?.ok && "url" in res && res.url) window.location.href = res.url;
     else toast.error(res?.message ?? "Betaling starten lukte niet.");
   };
 
@@ -128,9 +146,9 @@ export default function TipPage() {
           {page.message && <p className="text-sm text-muted-foreground">{page.message}</p>}
         </header>
 
-        {page.imageUrls.length > 0 && (
-          <div className={cn("grid gap-2", page.imageUrls.length === 1 ? "grid-cols-1" : page.imageUrls.length === 2 ? "grid-cols-2" : "grid-cols-3")}>
-            {page.imageUrls.map((src) => (
+        {photos.length > 0 && (
+          <div className={cn("grid gap-2", photos.length === 1 ? "grid-cols-1" : photos.length === 2 || photos.length === 4 ? "grid-cols-2" : "grid-cols-3")}>
+            {photos.map((src) => (
               <img key={src} src={src} alt="" loading="lazy" className="aspect-[4/3] w-full rounded-2xl object-cover" />
             ))}
           </div>
@@ -143,7 +161,7 @@ export default function TipPage() {
             <p className="mt-1 text-sm text-muted-foreground">Je bijdrage ging rechtstreeks naar {title}.</p>
           </section>
         ) : (
-          <section className="space-y-5 rounded-3xl border border-border bg-card p-5 sm:p-6">
+          <section className="flex flex-col gap-5 rounded-3xl border border-border bg-card p-5 sm:p-6">
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">Kies een bedrag</p>
               <div className="grid grid-cols-3 gap-2">
@@ -170,7 +188,7 @@ export default function TipPage() {
               {tooLow && <p className="text-xs text-destructive">Minimum is {euro(page.minCents)}.</p>}
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3" style={{ order: order.indexOf("transfer") + 1 }}>
               <p className="flex items-center gap-2 text-sm font-medium">
                 <Landmark className="h-4 w-4" aria-hidden /> Scan met je bank-app
               </p>
@@ -190,9 +208,24 @@ export default function TipPage() {
               </div>
             </div>
 
+            {page.externalLinks.length > 0 && (
+              <div className="space-y-2 border-t border-border pt-5" style={{ order: order.indexOf("links") + 1 }}>
+                <p className="text-sm font-medium">Steun via</p>
+                {page.externalLinks.map((l) => (
+                  <ExternalTipButton key={l.kind} kind={l.kind} value={l.value} />
+                ))}
+              </div>
+            )}
+
             {page.psp && (
-              <div className="space-y-3 border-t border-border pt-5">
-                <p className="text-sm font-medium">Of betaal direct</p>
+              <div className="space-y-3 border-t border-border pt-5" style={{ order: order.indexOf("psp") + 1 }}>
+                <p className="text-sm font-medium">Betaal direct</p>
+                {embedded ? (
+                  <Suspense fallback={<Loader2 className="mx-auto h-5 w-5 animate-spin" />}>
+                    <StripeEmbeddedPay {...embedded} label={`Betaal ${euro(cents)}`} onCancel={() => setEmbedded(null)} />
+                  </Suspense>
+                ) : (
+                <>
                 <Altcha />
                 <div className="grid gap-2">
                   {page.psp.methods.includes("card") && (
@@ -211,6 +244,8 @@ export default function TipPage() {
                     </Button>
                   )}
                 </div>
+                </>
+                )}
                 <p className="text-center text-[11px] text-muted-foreground">
                   Verwerkt door de eigen betaalprovider van {title}. ROUT is geen betaalverwerker en neemt geen commissie.
                 </p>
