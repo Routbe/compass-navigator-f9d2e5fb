@@ -21,7 +21,6 @@ export function normalizeQrSettings(raw: unknown): ProfileQrStyle | null {
   const corner = CORNERS.includes(r["cornerStyle"] as QrCornerStyle)
     ? (r["cornerStyle"] as QrCornerStyle)
     : ROUT_QR_DEFAULT.cornerStyle;
-  const emblem = typeof r["emblem"] === "boolean" ? r["emblem"] : ROUT_QR_DEFAULT.emblem;
   const str = (k: string, re: RegExp) => (typeof r[k] === "string" && re.test(r[k] as string) ? (r[k] as string) : undefined);
   const SHAPE = /^[a-z-]{2,20}$/;
   const dotStyle = str("dotStyle", SHAPE);
