@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/db/client";
-import { inviteMessage, inviteUrl } from "@/lib/invite";
+import { INVITE_INTRO, inviteUrl } from "@/lib/invite";
 import { getReferralStats } from "@/lib/referral.functions";
 import { INVITE_TIERS, nextMilestone, type ReferralReward } from "@/lib/referral-rewards";
 import { useI18n } from "@/lib/i18n";
@@ -61,15 +61,14 @@ export function ReferralPanel() {
 
   if (!handle) return null;
   const link = inviteUrl(handle, verified);
-  const message = inviteMessage(link);
   const milestone = nextMilestone({ invited, verifiedInvites });
   const progress = milestone ? Math.min(100, Math.round((invited / milestone.goal) * 100)) : 100;
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(message);
+      await navigator.clipboard.writeText(link);
       setCopied(true);
-      toast.success("Uitnodigingstekst & link gekopieerd!", { description: link });
+      toast.success("Link gekopieerd!", { description: link });
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
       toast.error("Kopiëren mislukt — selecteer de link handmatig.");
@@ -79,7 +78,7 @@ export function ReferralPanel() {
   const share = async () => {
     if (typeof navigator !== "undefined" && "share" in navigator) {
       try {
-        await navigator.share({ url: link, text: message, title: t("referral.shareTitle") });
+        await navigator.share({ url: link, text: INVITE_INTRO, title: t("referral.shareTitle") });
         return;
       } catch {
         /* geannuleerd — val terug op kopiëren */
