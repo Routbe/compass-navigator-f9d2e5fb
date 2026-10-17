@@ -28,10 +28,8 @@
 - Build mode filters route files via app-mode-routes.ts; admin files use admin.* names. Why: public bundles must exclude admin code.
 - Shells load lazily; preview mode overrides are UI-only. Why: previews never loosen server access.
 - Stamps: lock links before redeeming in one gateway transaction; enforce public profile visibility. Why: no cap overruns or private collections leaked.
-- Open-web ownership: server-side bio-check only (`checkBioVerify`); `verified_via` 'sso'|'bio', handle change drops bio; user fetch hosts pass `isPublicHost`. Why: no client trust, no SSRF.
 
 - Admin control uses authenticated RPCs with assertAdminRole, keyset pages and explicit errors; transport logs store actual HTTP status/direction, never URLs or request bodies. Why: protect private data and avoid invented telemetry.
-- Live-status windows: `live-presence-rules.ts`, applied server-side. Why: no client trust.
 - Admin email entry checks configured owners or stored admin roles before auth; endpoint checks remain. Why: refuse members without granting privileges.
 - Profile sections use profile-section-blocks.ts and blocks; explicit hidden/scheduled sections suppress fallbacks. Why: no duplicate or resurrected content.
 - No Supabase client or token middleware; sessions use the rout_session cookie. Why: it broke sign-in.
@@ -41,4 +39,3 @@
 - Subdirectories (e.g. src/lib) have their own AGENTS.md; read it before changing files there.
 
 - Auth and Studio display text uses the existing area locale bundles merged by the i18n provider; identifiers, stored values and access rules never use translated strings. Why: language changes must not change application behavior.
-- Creator payment keys: Stripe accepts only restricted keys (`checkStripeKey` in `tip-rules.ts`, enforced in `savePsp`), sealed with secretbox, decrypted only inside the payment handler. Why: a leaked full secret key would expose the creator's whole Stripe account.
