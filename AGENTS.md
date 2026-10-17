@@ -41,3 +41,4 @@
 - Subdirectories (e.g. src/lib) have their own AGENTS.md; read it before changing files there.
 
 - Auth and Studio display text uses the existing area locale bundles merged by the i18n provider; identifiers, stored values and access rules never use translated strings. Why: language changes must not change application behavior.
+- Creator payment keys: Stripe accepts only restricted keys (`checkStripeKey` in `tip-rules.ts`, enforced in `savePsp`), sealed with secretbox, decrypted only inside the payment handler. Why: a leaked full secret key would expose the creator's whole Stripe account.
