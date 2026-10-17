@@ -14,7 +14,7 @@ function AliasReferralLanding() {
   useEffect(() => {
     // First touch wins (storeReferrer never overwrites); validated server-side on claim.
     storeReferrer(handle);
-    void navigate({ to: "/u/$username", params: { username: handle }, replace: true });
+    void navigate({ to: "/about", search: { ref: `u_${handle}` } as never, replace: true });
   }, [handle, navigate]);
 
   return (

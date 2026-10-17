@@ -18,13 +18,21 @@ export interface ProfileQrStyle {
   cornerStyle: QrCornerStyle;
   /** ROUT Rabbit-embleem in het midden van de code. */
   emblem: boolean;
+  /** Volledig generator-ontwerp (optioneel, oudere opslag heeft dit niet). */
+  dotStyle?: string;
+  outerCornerStyle?: string;
+  innerCornerStyle?: string;
+  /** CSS-achtergrond (bv. linear-gradient) uit de ontwerper. */
+  bgGradient?: string | null;
+  /** Eigen logo (https-URL of kleine data-URI). Geen logo = niets in het midden. */
+  logo?: string | null;
 }
 
 export const DEFAULT_PROFILE_QR_STYLE: ProfileQrStyle = {
   fgColor: "#1A1A1A",
   bgColor: "#FFFFFF",
   cornerStyle: "square",
-  emblem: true,
+  emblem: false,
 };
 
 export const CORNER_STYLES: { id: QrCornerStyle; label: string }[] = [

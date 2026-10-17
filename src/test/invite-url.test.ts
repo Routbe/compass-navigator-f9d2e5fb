@@ -14,3 +14,10 @@ describe("invite links", () => {
     );
   });
 });
+
+describe("invite link normalisation", async () => {
+  const { normalizeReferralCode } = await import("@/lib/referral");
+  it("free alias ref u_jona credits inviter jona", () => {
+    expect(normalizeReferralCode("u_jona")).toBe("jona");
+  });
+});

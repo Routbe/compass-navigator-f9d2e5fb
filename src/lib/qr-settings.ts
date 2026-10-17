@@ -5,7 +5,7 @@ export const ROUT_QR_DEFAULT: ProfileQrStyle = {
   fgColor: "#1A1A1A",
   bgColor: "#FFFFFF",
   cornerStyle: "square",
-  emblem: true,
+  emblem: false,
 };
 
 const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
@@ -21,6 +21,19 @@ export function normalizeQrSettings(raw: unknown): ProfileQrStyle | null {
   const corner = CORNERS.includes(r["cornerStyle"] as QrCornerStyle)
     ? (r["cornerStyle"] as QrCornerStyle)
     : ROUT_QR_DEFAULT.cornerStyle;
-  const emblem = typeof r["emblem"] === "boolean" ? r["emblem"] : ROUT_QR_DEFAULT.emblem;
-  return { fgColor: fg, bgColor: bg, cornerStyle: corner, emblem };
+  const str = (k: string, re: RegExp) => (typeof r[k] === "string" && re.test(r[k] as string) ? (r[k] as string) : undefined);
+  const SHAPE = /^[a-z-]{2,20}$/;
+  const dotStyle = str("dotStyle", SHAPE);
+  const outerCornerStyle = str("outerCornerStyle", SHAPE);
+  const innerCornerStyle = str("innerCornerStyle", SHAPE);
+  const bgGradient = str("bgGradient", /^(linear|radial|conic)-gradient\([#%(),.\w\s-]{1,300}\)$/);
+  const logo =
+    typeof r["logo"] === "string" &&
+    (/^https:\/\/[^\s"'<>]{1,500}$/.test(r["logo"]) ||
+      (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(r["logo"]) && r["logo"].length <= 200_000))
+      ? r["logo"]
+      : undefined;
+  // Konijn alleen als expliciet opgeslagen; nooit meer standaard.
+  const emblem = r["emblem"] === true && !logo ? true : false;
+  return { fgColor: fg, bgColor: bg, cornerStyle: corner, emblem, dotStyle, outerCornerStyle, innerCornerStyle, bgGradient, logo };
 }
