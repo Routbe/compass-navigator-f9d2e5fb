@@ -30,3 +30,5 @@
 - [x] Audit line under verified accounts: "Geverifieerd op <datum> via Platform Login / Bio-link"
 - [x] Admin: verify users directly (Pro / Influencer / Business) + Conversie Coach mobile button
 - [ ] Smart media autocomplete briefs (2 uploads) — not started, awaiting go-ahead
+- [x] Support page v2: Studio mode switcher, first-time tour, methods order, external brand links, 6 auto-shrunk photos, Bluesky/Mastodon photos, in-page Stripe (restricted keys only)
+- [ ] Stripe Connect (OAuth) to replace pasted restricted keys — later

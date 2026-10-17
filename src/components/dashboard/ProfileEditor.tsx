@@ -114,6 +114,7 @@ import { MAX_FAVORITES } from "@/lib/favorites";
 import { ProfileView } from "@/components/profile/ProfileView";
 import { LayerStudioAccordion } from "@/components/studio/LayerStudioAccordion";
 import { TipPagePanel } from "@/components/dashboard/TipPagePanel";
+import { StudioModeSwitcher } from "@/components/dashboard/StudioModeSwitcher";
 import {
   checkStudioHandle,
   getStudioAnalytics,
@@ -162,6 +163,8 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
   const discardDraft = useServerFn(alias ? discardAliasDraft : discardStudioDraft);
   const loadAnalytics = useServerFn(getStudioAnalytics);
   const [tab, setTab] = useState<StudioTab>("links");
+  /** Studio-modus: het profiel zelf of de steunpagina (rout.be/<handle>/tip). */
+  const [editMode, setEditMode] = useState<"profile" | "tip">("profile");
   // Welke accordion open staat op het tabblad "Settings & verified" — de
   // potlood-knop in de kopbalk stuurt hier rechtstreeks op.
   const [settingsSection, setSettingsSection] = useState<string | undefined>(undefined);
@@ -890,6 +893,23 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
         </div>
       </div>
 
+      {!alias && verified && (
+        <StudioModeSwitcher mode={editMode} onChange={setEditMode} handle={normalized || "handle"} />
+      )}
+
+      {editMode === "tip" && !alias && verified ? (
+        <div className="mt-4 grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
+          <div className="min-w-0 space-y-6 lg:col-span-7">
+            <TipPagePanel />
+          </div>
+          <div className="hidden lg:col-span-5 lg:block">
+            <div className="sticky top-32 overflow-hidden rounded-3xl border border-border">
+              <iframe title="Voorbeeld steunpagina" src={`/${normalized}/tip`} className="h-[720px] w-full bg-background" />
+            </div>
+          </div>
+        </div>
+      ) : (
+      <>
       {/* RIJ 2 — hoofdnavigatie van de studio */}
       <div
         role="tablist"
@@ -1784,6 +1804,8 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
             de formulieren links scrollen (z-10 < vaste header z-50) */}
         <ProfileHeaderPreview previewDraft={previewDraft} free={previewFree} />
       </div>
+      </>
+      )}
 
       {/* Low, compact mobile bar: subtle autosave status + primary live-preview action.
           Desktop already shows the pinned preview aside, so this bar is mobile-only. */}

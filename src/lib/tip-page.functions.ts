@@ -10,7 +10,12 @@ const settingsSchema = z.object({
   allowCustom: z.boolean(),
   minCents: z.number().int().min(100).max(500_000),
   message: z.string().max(400),
-  imageUrls: z.array(z.string().url().max(600)).max(3),
+  imageUrls: z.array(z.string().url().max(600)).max(6),
+  methods: z.array(z.object({ id: z.enum(["transfer", "psp", "links"]), enabled: z.boolean() })).max(3),
+  externalLinks: z.array(z.object({ kind: z.enum(["buymeacoffee", "kofi", "paypal", "bunq", "patreon", "liberapay"]), value: z.string().max(200) })).max(6),
+  socialSource: z
+    .object({ network: z.enum(["bluesky", "mastodon"]), handle: z.string().max(120), mode: z.enum(["latest", "picked"]), picked: z.array(z.string().max(600)).max(6) })
+    .nullable(),
 });
 
 export const getMyTipSetup = createServerFn({ method: "GET" })
@@ -52,12 +57,12 @@ const provider = z.enum(["stripe", "mollie"]);
 
 export const saveMyPspKey = createServerFn({ method: "POST" })
   .middleware([requireAuth])
-  .inputValidator((d: unknown) => z.object({ provider, secret: z.string().min(10).max(300), acceptDisclaimer: z.literal(true) }).parse(d))
+  .inputValidator((d: unknown) => z.object({ provider, secret: z.string().min(10).max(300), publishableKey: z.string().max(300).optional(), acceptDisclaimer: z.literal(true) }).parse(d))
   .handler(async ({ data, context }) => {
     const { enforceRateLimit } = await import("./rate-limit.server");
     enforceRateLimit(`psp-key:${context.userId}`, 10, 60_000);
     const { savePsp } = await import("./tip-page.server");
-    return savePsp(context.userId, data.provider, data.secret);
+    return savePsp(context.userId, data.provider, data.secret, data.publishableKey);
   });
 
 export const deleteMyPspKey = createServerFn({ method: "POST" })
@@ -109,4 +114,14 @@ export const getTipJarQr = createServerFn({ method: "GET" })
     const reference = `Steun @${page.handle}`;
     const payload = buildEpcPayload({ beneficiary: page.accountName, iban: page.iban, amountCents, reference });
     return payload ? { handle: page.handle, accountName: page.accountName, amountCents, payload } : null;
+  });
+
+/** Openbare foto's van Bluesky/Mastodon (enkel openbaar, geen gevoelige media), via de beeldproxy. */
+export const fetchTipSocialImages = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ network: z.enum(["bluesky", "mastodon"]), handle: z.string().max(120) }).parse(d))
+  .handler(async ({ data }) => {
+    const { enforceRateLimit } = await import("./rate-limit.server");
+    enforceRateLimit(`tip-social:${data.network}:${data.handle.toLowerCase()}`, 20, 60_000);
+    const { fetchSocialImages } = await import("./tip-social.server");
+    return fetchSocialImages(data.network, data.handle);
   });

@@ -22,3 +22,11 @@
 
 - Guestbook (`guestbook.server.ts`, db/90): only signed-in members post, owners pin/delete via `owner_id` checks, public reads return pinned notes of public profiles only. Why: verified network effect, no spam, privacy enforced server-side.
 - Admin gifts share gift-issue-rules, activate atomically and resolve recipient email server-side; mail status comes from the central sender. Why: preserve checkout value and recipient privacy without false delivery claims.
+
+- Creator payment keys: Stripe accepts only restricted keys (`checkStripeKey` in `tip-rules.ts`, enforced in `savePsp`), sealed with secretbox, decrypted only inside the payment handler. Why: a leaked full secret key would expose the creator's whole Stripe account.
+- Live-status windows: `live-presence-rules.ts`, applied server-side. Why: no client trust.
+- Open-web ownership: server-side bio-check only (`checkBioVerify`); `verified_via` 'sso'|'bio', handle change drops bio; user fetch hosts pass `isPublicHost`. Why: no client trust, no SSRF.
+- Stamps: lock links before redeeming in one gateway transaction; enforce public profile visibility. Why: no cap overruns or private collections leaked.
+- Profile sections use profile-section-blocks.ts and blocks; explicit hidden/scheduled sections suppress fallbacks. Why: no duplicate or resurrected content.
+- Community stats are live counts; reviews show only when `approved` (db/65); empty sections hide. Approving a verification cancels that user's other open same-tier requests (`verification-dedupe.ts`). Why: no fake social proof or duplicate work.
+- ALTCHA uses self-hosted single-use proofs; db/54 owns replay DDL, unavailable storage fails closed, invalid proofs are refused before auth. Why: least privilege without weaker bot protection.

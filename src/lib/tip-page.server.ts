@@ -6,6 +6,16 @@
  */
 import { sql } from "@/lib/neon";
 import { isValidIban } from "@/lib/epc-qr";
+import {
+  TIP_MAX_IMAGES,
+  checkStripeKey,
+  normalizeExternalLinks,
+  normalizeSocialSource,
+  normalizeTipMethods,
+  type ExternalTipLink,
+  type TipMethod,
+  type TipSocialSource,
+} from "@/lib/tip-rules";
 
 type Row = Record<string, unknown>;
 export type PspProvider = "stripe" | "mollie";
@@ -49,9 +59,12 @@ export type TipSettings = {
   minCents: number;
   message: string;
   imageUrls: string[];
+  methods: TipMethod[];
+  externalLinks: ExternalTipLink[];
+  socialSource: TipSocialSource;
 };
 
-const DEFAULTS: TipSettings = { enabled: false, iban: "", accountName: "", presetsCents: [500, 1000, 2500], allowCustom: true, minCents: 100, message: "", imageUrls: [] };
+const DEFAULTS: TipSettings = { enabled: false, iban: "", accountName: "", presetsCents: [500, 1000, 2500], allowCustom: true, minCents: 100, message: "", imageUrls: [], methods: normalizeTipMethods(null), externalLinks: [], socialSource: null };
 
 function toSettings(r: Row | undefined): TipSettings {
   if (!r) return { ...DEFAULTS };
@@ -64,6 +77,9 @@ function toSettings(r: Row | undefined): TipSettings {
     minCents: Number(r["min_cents"] ?? 100),
     message: (r["message"] as string | null) ?? "",
     imageUrls: Array.isArray(r["image_urls"]) ? (r["image_urls"] as string[]) : [],
+    methods: normalizeTipMethods(r["methods"]),
+    externalLinks: normalizeExternalLinks(r["external_links"]),
+    socialSource: normalizeSocialSource(r["social_source"]),
   };
 }
 
@@ -89,15 +105,20 @@ export async function writeTipSettings(userId: string, input: TipSettings) {
       return { ok: false as const, message: "De rekeninghouder moet overeenkomen met je geverifieerde naam." };
   }
   const presets = [...new Set(input.presetsCents.map((c) => Math.round(c)).filter((c) => c >= input.minCents && c <= 500_000))].sort((a, b) => a - b).slice(0, 6);
-  const images = input.imageUrls.filter((u) => /^https:\/\//.test(u)).slice(0, 3);
+  const images = input.imageUrls.filter((u) => /^https:\/\//.test(u)).slice(0, TIP_MAX_IMAGES);
+  const methods = JSON.stringify(normalizeTipMethods(input.methods));
+  const links = JSON.stringify(normalizeExternalLinks(input.externalLinks));
+  const social = normalizeSocialSource(input.socialSource);
+  const socialJson = social ? JSON.stringify(social) : null;
   await sql`
-    insert into public.tip_settings (user_id, enabled, iban, account_name, presets_cents, allow_custom, min_cents, message, image_urls, updated_at)
+    insert into public.tip_settings (user_id, enabled, iban, account_name, presets_cents, allow_custom, min_cents, message, image_urls, methods, external_links, social_source, updated_at)
     values (${userId}, ${input.enabled}, ${iban || null}, ${input.accountName.trim() || null}, ${presets}, ${input.allowCustom},
-            ${input.minCents}, ${input.message.trim() || null}, ${images}, now())
+            ${input.minCents}, ${input.message.trim() || null}, ${images}, ${methods}::jsonb, ${links}::jsonb, ${socialJson}::jsonb, now())
     on conflict (user_id) do update set
       enabled = excluded.enabled, iban = excluded.iban, account_name = excluded.account_name,
       presets_cents = excluded.presets_cents, allow_custom = excluded.allow_custom, min_cents = excluded.min_cents,
-      message = excluded.message, image_urls = excluded.image_urls, updated_at = now()
+      message = excluded.message, image_urls = excluded.image_urls, methods = excluded.methods,
+      external_links = excluded.external_links, social_source = excluded.social_source, updated_at = now()
   `;
   return { ok: true as const };
 }
@@ -116,37 +137,48 @@ export async function listPsp(userId: string): Promise<PspStatus[]> {
 }
 
 const KEY_SHAPE: Record<PspProvider, RegExp> = {
-  stripe: /^(sk|rk)_(live|test)_[A-Za-z0-9]{16,}$/,
+  stripe: /^rk_(live|test)_[A-Za-z0-9]{16,}$/,
   mollie: /^(live|test)_[A-Za-z0-9]{20,}$/,
 };
 
 async function probeKey(provider: PspProvider, secret: string): Promise<boolean> {
   try {
-    const res =
-      provider === "stripe"
-        ? await fetch("https://api.stripe.com/v1/balance", { headers: { Authorization: `Bearer ${secret}` } })
-        : await fetch("https://api.mollie.com/v2/methods", { headers: { Authorization: `Bearer ${secret}` } });
+    if (provider === "stripe") {
+      // Beperkte sleutel: 401 = ongeldig; 403 = geldig maar zonder leesrecht (verwacht).
+      const res = await fetch("https://api.stripe.com/v1/payment_intents?limit=1", { headers: { Authorization: `Bearer ${secret}` } });
+      return res.ok || res.status === 403;
+    }
+    const res = await fetch("https://api.mollie.com/v2/methods", { headers: { Authorization: `Bearer ${secret}` } });
     return res.ok;
   } catch {
     return false;
   }
 }
 
-export async function savePsp(userId: string, provider: PspProvider, rawSecret: string) {
+export async function savePsp(userId: string, provider: PspProvider, rawSecret: string, publishableKey?: string | null) {
   const e = await assertTipEligible(userId);
   if (!e.isBusiness) return { ok: false as const, message: "Betaalproviders vereisen een goedgekeurde Bedrijfsbadge." };
   const { encryptionConfigured, seal } = await import("./crypto/secretbox.server");
   if (!encryptionConfigured()) return { ok: false as const, message: "Versleuteling is niet ingesteld op de server." };
   const secret = rawSecret.trim();
+  let pk: string | null = null;
+  if (provider === "stripe") {
+    const check = checkStripeKey(secret);
+    if (!check.ok) return { ok: false as const, message: check.message };
+    pk = (publishableKey ?? "").trim();
+    if (!/^pk_(live|test)_[A-Za-z0-9]{16,}$/.test(pk)) return { ok: false as const, message: "Vul ook je publishable key (pk_live_…) in." };
+    if (pk.slice(3, 7) !== secret.slice(3, 7)) return { ok: false as const, message: "Live- en testsleutels mogen niet gemengd worden." };
+  }
   if (!KEY_SHAPE[provider].test(secret)) return { ok: false as const, message: "Dit lijkt geen geldige geheime sleutel." };
   if (!(await probeKey(provider, secret))) return { ok: false as const, message: "De provider weigerde deze sleutel." };
   const mode = /(^|_)test_/.test(secret) ? "test" : "live";
   const { ciphertext, iv } = await seal(secret, `${userId}:${provider}`);
   await sql`
-    insert into public.psp_credentials (user_id, provider, ciphertext, iv, last4, mode, verified_at)
-    values (${userId}, ${provider}, ${ciphertext}, ${iv}, ${secret.slice(-4)}, ${mode}, now())
+    insert into public.psp_credentials (user_id, provider, ciphertext, iv, last4, mode, publishable_key, verified_at)
+    values (${userId}, ${provider}, ${ciphertext}, ${iv}, ${secret.slice(-4)}, ${mode}, ${pk}, now())
     on conflict (user_id, provider) do update set
-      ciphertext = excluded.ciphertext, iv = excluded.iv, last4 = excluded.last4, mode = excluded.mode, verified_at = now()
+      ciphertext = excluded.ciphertext, iv = excluded.iv, last4 = excluded.last4, mode = excluded.mode,
+      publishable_key = excluded.publishable_key, verified_at = now()
   `;
   return { ok: true as const };
 }
@@ -170,6 +202,9 @@ export type PublicTipPage = {
   message: string | null;
   imageUrls: string[];
   psp: { provider: PspProvider; methods: PspMethod[] } | null;
+  methods: TipMethod[];
+  externalLinks: ExternalTipLink[];
+  socialSource: TipSocialSource;
 };
 
 async function ownerOf(rawHandle: string): Promise<{ id: string; handle: string; displayName: string | null; avatarUrl: string | null } | null> {
@@ -205,7 +240,16 @@ export async function readPublicTipPage(rawHandle: string): Promise<PublicTipPag
       minCents: s.minCents,
       message: s.message || null,
       imageUrls: s.imageUrls,
-      psp: mollie ? { provider: "mollie", methods: ["card", "bancontact", "wero"] } : stripe ? { provider: "stripe", methods: ["card", "bancontact"] } : null,
+      psp: !s.methods.find((m) => m.id === "psp")?.enabled
+        ? null
+        : mollie
+          ? { provider: "mollie", methods: ["card", "bancontact", "wero"] }
+          : stripe
+            ? { provider: "stripe", methods: ["card"] }
+            : null,
+      methods: s.methods,
+      externalLinks: s.methods.find((m) => m.id === "links")?.enabled ? s.externalLinks : [],
+      socialSource: s.socialSource,
     };
   } catch (error) {
     console.warn("[tip-page] read failed", error);
@@ -230,27 +274,27 @@ export async function startPspTip(opts: { handle: string; amountCents: number; m
 
   try {
     if (page.psp.provider === "stripe") {
+      // Ingebouwd: PaymentIntent op het account van de maker; de browser toont Stripe's eigen betaalvenster.
+      const pkRows = (await sql`select publishable_key from public.psp_credentials where user_id = ${owner.id} and provider = 'stripe' limit 1`) as Row[];
+      const publishableKey = (pkRows[0]?.["publishable_key"] as string | null) ?? null;
+      if (!publishableKey) return { ok: false as const, message: "Deze maker moet zijn Stripe-koppeling vernieuwen." };
       const body = new URLSearchParams({
-        mode: "payment",
-        success_url: `${back}?status=success`,
-        cancel_url: `${back}?status=cancel`,
-        "line_items[0][quantity]": "1",
-        "line_items[0][price_data][currency]": "eur",
-        "line_items[0][price_data][unit_amount]": String(amount),
-        "line_items[0][price_data][product_data][name]": description,
-        "payment_method_types[0]": opts.method === "bancontact" ? "bancontact" : "card",
+        amount: String(amount),
+        currency: "eur",
+        description,
+        "automatic_payment_methods[enabled]": "true",
       });
-      const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      const res = await fetch("https://api.stripe.com/v1/payment_intents", {
         method: "POST",
         headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/x-www-form-urlencoded" },
         body,
       });
-      const json = (await res.json()) as { url?: string; error?: { message?: string } };
-      if (!res.ok || !json.url) {
-        console.warn("[tip-page] stripe", json.error?.message);
+      const json = (await res.json()) as { client_secret?: string; error?: { message?: string } };
+      if (!res.ok || !json.client_secret) {
+        console.warn("[tip-page] stripe", res.status);
         return { ok: false as const, message: "De betaalprovider van de maker weigerde de betaling." };
       }
-      return { ok: true as const, url: json.url };
+      return { ok: true as const, embedded: { clientSecret: json.client_secret, publishableKey, returnUrl: `${back}?status=success` } };
     }
     const payload: Record<string, unknown> = {
       amount: { currency: "EUR", value: (amount / 100).toFixed(2) },
