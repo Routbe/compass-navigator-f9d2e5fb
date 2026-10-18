@@ -59,7 +59,7 @@ import { BadgeShowcase } from "@/components/profile/BadgeShowcase";
 import { VerifiedInfoDialog } from "@/components/profile/VerifiedInfoDialog";
 import { monthYear } from "@/components/profile/VerifiedBadgePopover";
 import { ProfileBadge } from "@/components/profile/ProfileBadge";
-import { ProfilePassport } from "@/components/profile/CustomBadgeRow";
+import { ProfilePassport, ProfileNameBadges } from "@/components/profile/CustomBadgeRow";
 import type { BadgeType } from "@/lib/profile-display";
 import { EarlyBelieverBadge } from "@/components/profile/EarlyBelieverBadge";
 import {
@@ -396,7 +396,7 @@ export function ProfileView({
         </div>
 
         <h1
-          className="mt-4 flex items-center gap-1.5 break-words text-center font-display text-2xl"
+          className="mt-4 flex max-w-full flex-wrap items-center justify-center gap-1.5 break-words text-center font-display text-2xl"
           style={prefs.typographyCustom || prefs.customDesign ? { fontFamily: fonts.heading, fontSize: `${prefs.titleScale}%`, letterSpacing: prefs.titleLetterSpacing, textShadow: prefs.titleGlow > 0 ? `0 0 ${prefs.titleGlow}px currentColor` : undefined } : undefined}
         >
           <span
@@ -423,6 +423,7 @@ export function ProfileView({
               mutedColor={t.muted}
             />
           )}
+          <ProfileNameBadges handle={profile.username} theme={t} />
         </h1>
         {profile.username && <SnapchatProfile handle={profile.username} theme={t} />}
         {profile.username && <NowPlaying handle={profile.username} theme={t} />}
@@ -430,7 +431,7 @@ export function ProfileView({
         {profile.username && usesSectionFallback(profile.blocks, "widget:youtube") && <ProfileYouTubeCard handle={profile.username} theme={t} />}
         {profile.username && <TipJarButton handle={profile.username} theme={t} />}
         <ProfilePassport handle={profile.username} theme={t} />
-        {profile.username && usesSectionFallback(profile.blocks, "widget:guestbook") && <ProfileGuestbook handle={profile.username} theme={t} />}
+        {profile.username && prefs.guestbookEnabled && usesSectionFallback(profile.blocks, "widget:guestbook") && <ProfileGuestbook handle={profile.username} theme={t} />}
         {profile.username && prefs.questionsEnabled && <ProfileQuestions handle={profile.username} theme={t} />}
 
         {earlyBeliever && (
@@ -584,7 +585,7 @@ export function ProfileView({
           )}
           {blocks.map((b) =>
             b.kind === "widget:guestbook" ? (
-              profile.username ? <div key={b.id} className="w-full lg:col-span-full"><ProfileGuestbook handle={profile.username} theme={t} /></div> : null
+              profile.username && prefs.guestbookEnabled ? <div key={b.id} className="w-full lg:col-span-full"><ProfileGuestbook handle={profile.username} theme={t} /></div> : null
             ) : b.kind === "widget:badges" ? (
               prefs.badgeShowcaseVisible ? <div key={b.id} className="w-full lg:col-span-full"><BadgeShowcase userId={profile.id} theme={t} /></div> : null
             ) : b.kind === "widget:youtube" ? (
