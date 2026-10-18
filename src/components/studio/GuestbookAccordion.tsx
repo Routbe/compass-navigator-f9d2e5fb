@@ -6,9 +6,12 @@ import { Pin, PinOff, Trash2 } from "lucide-react";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { deleteGuestbookNote, getMyGuestbook, pinGuestbookNote } from "@/lib/guestbook.functions";
 import { GUESTBOOK_PIN_LIMIT } from "@/lib/guestbook-rules";
+import { Switch } from "@/components/ui/switch";
+import { StudioSectionIcon } from "./StudioSectionIcon";
+import { Button } from "@/components/ui/button";
 
 /** Studio: all received notes; pin the best ones to the public Prikbord. */
-export function GuestbookAccordion() {
+export function GuestbookAccordion({ enabled, onEnabledChange }: { enabled: boolean; onEnabledChange: (enabled: boolean) => void }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const fetchMine = useServerFn(getMyGuestbook);
@@ -20,14 +23,19 @@ export function GuestbookAccordion() {
   const refresh = () => qc.invalidateQueries({ queryKey: ["my-guestbook"] });
 
   return (
-    <AccordionItem value="guestbook" className="rounded-2xl border border-border bg-card px-4 sm:px-5">
-      <AccordionTrigger className="hover:no-underline">
-        <span className="text-left">
+    <details className="border-t border-border pt-4">
+      <summary className="flex min-h-11 cursor-pointer items-center gap-2">
+        <StudioSectionIcon kind="guestbook" />
+        <span className="min-w-0 flex-1 text-left">
           <span className="block text-sm font-medium">{t("studio.guestbook.title")}</span>
-          <span className="block text-xs text-muted-foreground">{notes.length} berichten · {pinnedCount}/{GUESTBOOK_PIN_LIMIT} gepind</span>
+          <span className="block text-xs text-muted-foreground">{t("studio.guestbook.counts", { total: notes.length, pinned: pinnedCount, limit: GUESTBOOK_PIN_LIMIT })}</span>
         </span>
-      </AccordionTrigger>
-      <AccordionContent className="space-y-2 pb-5">
+      </summary>
+      <div className="space-y-2 py-3">
+        <label className="flex items-center justify-between gap-3 py-2 text-sm">
+          {t("studio.guestbook.onProfile")}
+          <Switch checked={enabled} onCheckedChange={onEnabledChange} aria-label={t("studio.guestbook.onProfile")} />
+        </label>
         {notes.length === 0 && <p className="text-xs text-muted-foreground">{t("studio.guestbook.empty")}</p>}
         {notes.map((n) => (
           <div key={n.id} className={`flex items-start gap-2 rounded-xl border p-3 ${n.pinned ? "border-primary/50 bg-primary/5" : "border-border"}`}>
@@ -37,7 +45,7 @@ export function GuestbookAccordion() {
                 @{n.author.username ?? t("studio.common.unknown")} · {new Date(n.createdAt).toLocaleDateString("nl-BE")}
               </p>
             </div>
-            <button
+            <Button variant="outline" size="icon"
               type="button"
               aria-label={n.pinned ? t("studio.guestbook.unpin") : t("studio.guestbook.pin")}
               onClick={async () => {
@@ -48,8 +56,8 @@ export function GuestbookAccordion() {
               className="rounded-lg border border-border p-1.5 hover:bg-muted"
             >
               {n.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
-            </button>
-            <button
+            </Button>
+            <Button variant="outline" size="icon"
               type="button"
               aria-label={t("studio.common.delete")}
               onClick={async () => {
@@ -59,10 +67,10 @@ export function GuestbookAccordion() {
               className="rounded-lg border border-border p-1.5 hover:bg-muted"
             >
               <Trash2 className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
         ))}
-      </AccordionContent>
-    </AccordionItem>
+      </div>
+    </details>
   );
 }

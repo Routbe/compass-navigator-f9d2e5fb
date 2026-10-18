@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { answerMyQuestion, deleteMyQuestion, getMyQuestions, setMyQuestionsEnabled, unpublishMyQuestion } from "@/lib/questions.functions";
 import { ANSWER_MAX } from "@/lib/questions-rules";
+import { StudioSectionIcon } from "./StudioSectionIcon";
 
 /** Studio inbox: anonymous questions; answering + t("studio.questions.publish") puts them on the public profile. */
-export function QuestionsInboxAccordion() {
+export function QuestionsInboxAccordion({ enabled, onEnabledChange }: { enabled: boolean; onEnabledChange: (enabled: boolean) => void }) {
   const { t, locale } = useI18n();
   const qc = useQueryClient();
   const fetchMine = useServerFn(getMyQuestions);
@@ -35,26 +36,24 @@ export function QuestionsInboxAccordion() {
   };
 
   return (
-    <AccordionItem value="questions" className="rounded-2xl border border-border bg-card px-4 sm:px-5">
-      <AccordionTrigger className="hover:no-underline">
-        <span className="text-left">
+    <details className="border-t border-border pt-4">
+      <summary className="flex min-h-11 cursor-pointer items-center gap-2">
+        <StudioSectionIcon kind="questions" />
+        <span className="min-w-0 flex-1 text-left">
           <span className="block text-sm font-medium">{t("studio.questions.title")}</span>
           <span className="block text-xs text-muted-foreground">{t("studio.questions.counts", { total: items.length, open })}</span>
         </span>
-      </AccordionTrigger>
-      <AccordionContent className="space-y-3 pb-5">
+      </summary>
+      <div className="space-y-3 py-3">
         <label className="flex items-center justify-between gap-3 rounded-xl border border-border p-3 text-sm">
           <span>
             <span className="block font-medium">{t("studio.questions.onProfile")}</span>
             <span className="block text-xs text-muted-foreground">{t("studio.questions.help")}</span>
           </span>
           <Switch
-            checked={q.data?.enabled !== false}
-            onCheckedChange={async (v) => {
-              await setEnabled({ data: { enabled: v } });
-              toast.success(v ? t("studio.questions.enabled") : t("studio.questions.disabled"));
-              void refresh();
-            }}
+            checked={enabled}
+            onCheckedChange={onEnabledChange}
+            aria-label={t("studio.questions.onProfile")}
           />
         </label>
         {items.length === 0 && <p className="text-xs text-muted-foreground">{t("studio.questions.empty")}</p>}
@@ -85,7 +84,7 @@ export function QuestionsInboxAccordion() {
             </div>
           </div>
         ))}
-      </AccordionContent>
-    </AccordionItem>
+      </div>
+    </details>
   );
 }

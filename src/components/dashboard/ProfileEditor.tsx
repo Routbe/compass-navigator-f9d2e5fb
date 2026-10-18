@@ -3,6 +3,8 @@ import { isProfileSectionKind, PROFILE_SECTION_LABELS } from "@/lib/profile-sect
 import { integrationById } from "@/lib/integrations-catalog";
 import { GuestbookAccordion } from "@/components/studio/GuestbookAccordion";
 import { QuestionsInboxAccordion } from "@/components/studio/QuestionsInboxAccordion";
+import { StudioSectionIcon } from "@/components/studio/StudioSectionIcon";
+import { getMyTipSetup } from "@/lib/tip-page.functions";
 import { QrCode } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -165,6 +167,8 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
   const [tab, setTab] = useState<StudioTab>("links");
   /** Studio-modus: het profiel zelf of de steunpagina (rout.be/<handle>/tip). */
   const [editMode, setEditMode] = useState<"profile" | "tip">("profile");
+  const [tipEnabled, setTipEnabled] = useState(false);
+  const loadTipSetup = useServerFn(getMyTipSetup);
   // Welke accordion open staat op het tabblad "Settings & verified" — de
   // potlood-knop in de kopbalk stuurt hier rechtstreeks op.
   const [settingsSection, setSettingsSection] = useState<string | undefined>(undefined);
@@ -199,6 +203,12 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
     setPrefs((p) => ({ ...p, [key]: value }));
   const [blocks, setBlocks] = useState<ProfileBlock[]>([]);
   const [verified, setVerified] = useState(false);
+  useEffect(() => {
+    if (alias || !verified) return;
+    let alive = true;
+    void loadTipSetup().then((setup) => { if (alive) setTipEnabled(setup.settings?.enabled === true); }).catch(() => undefined);
+    return () => { alive = false; };
+  }, [alias, verified, loadTipSetup]);
   // Rootclaim-gegevens: nodig om "Bekijk live profiel" uit één bron te halen.
   const [subdomainAlias, setSubdomainAlias] = useState<string | null>(null);
   /** Handle die eigenlijk een via DNS geclaimde domeinnaam is (rout.be/example.be). */
@@ -894,13 +904,13 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
       </div>
 
       {!alias && verified && (
-        <StudioModeSwitcher mode={editMode} onChange={setEditMode} handle={normalized || "handle"} />
+        <StudioModeSwitcher mode={editMode} onChange={setEditMode} handle={normalized || "handle"} enabled={tipEnabled} />
       )}
 
       {editMode === "tip" && !alias && verified ? (
         <div className="mt-4 grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
           <div className="min-w-0 space-y-6 lg:col-span-7">
-            <TipPagePanel />
+            <TipPagePanel onEnabledChange={setTipEnabled} />
           </div>
           <div className="hidden lg:col-span-5 lg:block">
             <div className="sticky top-32 overflow-hidden rounded-3xl border border-border">
@@ -962,10 +972,6 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
 
               <LiveStatusAccordion prefs={prefs} setPref={setPref} />
 
-              <QuestionsInboxAccordion />
-
-              <GuestbookAccordion />
-
               <ProfileContentAccordion
                 blocks={blocks}
                 onBlocksChange={setBlocks}
@@ -984,14 +990,17 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                   } else if (id === "youtube") {
                     addBlock("widget:youtube");
                   } else {
+                    setPref("guestbookEnabled", true);
                     toast.info(t("studio.editor.boardHelp"));
                   }
                 }}
               >
+                <QuestionsInboxAccordion enabled={prefs.questionsEnabled} onEnabledChange={(v) => setPref("questionsEnabled", v)} />
+                <GuestbookAccordion enabled={prefs.guestbookEnabled} onEnabledChange={(v) => setPref("guestbookEnabled", v)} />
 
                 {/* 🏅 Badges: eigen map binnen Links & componenten, met schakelaar. */}
                 <details className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-5">
-                  <summary className="cursor-pointer text-lg font-medium">{t("studio.badgesFolder")}</summary>
+                  <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium"><StudioSectionIcon kind="badges" />{t("studio.badgesFolder").replace(/^\p{Extended_Pictographic}\s*/u, "")}</summary>
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <p className="mt-1 text-sm text-muted-foreground">
@@ -1760,7 +1769,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                   <span className="text-base font-medium">{t("studio.editor.support")}</span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pb-5">
-                  <TipPagePanel />
+                  <TipPagePanel onEnabledChange={setTipEnabled} />
                 </AccordionContent>
               </AccordionItem>
 

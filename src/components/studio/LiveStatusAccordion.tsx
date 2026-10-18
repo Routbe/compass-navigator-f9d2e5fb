@@ -1,4 +1,5 @@
 import { useI18n } from "@/lib/i18n";
+import { StudioSectionIcon } from "./StudioSectionIcon";
 import { useSnapchatCallback } from "./SnapchatPanel";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { StatusContentSettings } from "@/components/dashboard/editor/StatusSettings";
@@ -17,7 +18,7 @@ export function LiveStatusAccordion({ prefs, setPref }: { prefs: ProfileDisplayP
     <AccordionItem value="live_status" className="rounded-2xl border border-border bg-card px-4 sm:px-5">
       <AccordionTrigger className="hover:no-underline">
         <span className="flex flex-1 items-center justify-between gap-3 pr-2">
-          <span className="text-base font-medium">{t("studio.live.title")}</span>
+          <span className="flex min-w-0 items-center gap-2 text-base font-medium"><StudioSectionIcon kind="live" />{t("studio.live.title").replace(/^\p{Extended_Pictographic}\s*/u, "")}</span>
           {prefs.statusLine && (
             <span className="max-w-[45%] truncate rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">
               {prefs.statusLine}

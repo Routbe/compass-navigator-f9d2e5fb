@@ -18,7 +18,8 @@ function toNote(r: Row): GuestbookNote {
 async function publicOwnerId(handle: string): Promise<string | null> {
   const rows = (await sql`select id from public.profiles
      where lower(username) = lower(${handle})
-       and coalesce((display_prefs ->> 'publicProfile')::boolean, true) limit 1`) as Row[];
+       and coalesce((display_prefs ->> 'publicProfile')::boolean, true)
+       and coalesce((display_prefs ->> 'guestbookEnabled')::boolean, true) limit 1`) as Row[];
   return rows[0] ? String(rows[0]["id"]) : null;
 }
 

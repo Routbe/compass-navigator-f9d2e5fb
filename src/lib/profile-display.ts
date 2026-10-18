@@ -155,6 +155,7 @@ export interface ProfileDisplayPrefs {
   timelineVisible: boolean;
   /** Anonieme vragen-blok op het profiel tonen en vragen aannemen. */
   questionsEnabled: boolean;
+  guestbookEnabled: boolean;
   badgeType: BadgeType;
   badgeNameFormat: BadgeNameFormat;
   /** Achtergrondje achter de badge (gloed, sticker of randje). */
@@ -251,6 +252,7 @@ export const DEFAULT_DISPLAY_PREFS: ProfileDisplayPrefs = {
   contextToggle: false,
   timelineVisible: true,
   questionsEnabled: true,
+  guestbookEnabled: true,
   badgeType: "verified",
   badgeNameFormat: "full",
   badgeBackdrop: "none",
@@ -443,6 +445,7 @@ export function parseDisplayPrefs(raw: unknown): ProfileDisplayPrefs {
     contextToggle: r["contextToggle"] === true,
     timelineVisible: r["timelineVisible"] === undefined ? true : Boolean(r["timelineVisible"]),
     questionsEnabled: r["questionsEnabled"] !== false,
+    guestbookEnabled: r["guestbookEnabled"] !== false,
     badgeType: oneOf(r["badgeType"], ["verified", "human", "domain", "influencer", "none"] as const, "verified"),
     badgeNameFormat: oneOf(r["badgeNameFormat"], ["full", "initials", "lower"] as const, "full"),
     badgeBackdrop: oneOf(r["badgeBackdrop"], ["none", "glow", "sticker", "ring"] as const, "none"),

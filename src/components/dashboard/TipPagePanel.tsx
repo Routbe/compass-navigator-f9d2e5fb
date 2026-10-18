@@ -46,7 +46,7 @@ const PSP_GUIDE = {
 } as const;
 
 /** Studio: steunpagina-instellingen. Vergrendeld zonder geverifieerde identiteit + root-handle. */
-export function TipPagePanel() {
+export function TipPagePanel({ onEnabledChange }: { onEnabledChange?: (enabled: boolean) => void }) {
   const load = useServerFn(getMyTipSetup);
   const save = useServerFn(saveMyTipSettings);
   const upload = useServerFn(uploadTipImage);
@@ -62,6 +62,7 @@ export function TipPagePanel() {
       .then((d) => {
         setSetup(d);
         if (d.settings) {
+          onEnabledChange?.(d.settings.enabled);
           setS(d.settings);
           setPresetText(d.settings.presetsCents.map((c) => String(c / 100).replace(".", ",")).join(", "));
         }
@@ -91,7 +92,8 @@ export function TipPagePanel() {
     );
   }
 
-  const handle = setup.eligibility.handle!;
+  const handle = setup.eligibility.handle;
+  if (!handle) return null;
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((p) => (p ? { ...p, [k]: v } : p));
   const ibanOk = !s.iban || isValidIban(s.iban.replace(/\s+/g, ""));
   const nameHint = setup.eligibility.isBusiness && setup.eligibility.businessName
@@ -107,6 +109,7 @@ export function TipPagePanel() {
     const res = await save({ data: { ...s, presetsCents: presets } }).catch(() => null);
     setBusy(false);
     if (res?.ok) {
+      onEnabledChange?.(s.enabled);
       toast.success("Steunpagina opgeslagen");
       void refresh();
     } else toast.error(res && !res.ok ? res.message : "Opslaan mislukt");
