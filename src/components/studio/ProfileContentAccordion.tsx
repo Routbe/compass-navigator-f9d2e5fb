@@ -5,6 +5,7 @@ import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/
 import { ProfileLinksManager } from "@/components/dashboard/editor/ProfileLinksManager";
 import { AddComponentModal, type WidgetId } from "@/components/studio/AddComponentModal";
 import { scheduledBlocks, type ProfileBlock } from "@/lib/profile";
+import { StudioSectionIcon } from "./StudioSectionIcon";
 
 interface Props {
   blocks: ProfileBlock[];
@@ -50,7 +51,7 @@ export function ProfileContentAccordion({
     >
       <AccordionTrigger className="hover:no-underline">
         <span className="flex flex-1 items-center justify-between gap-3 pr-2">
-          <span className="text-base font-medium">{t("studio.content.title")}</span>
+          <span className="flex min-w-0 items-center gap-2 text-base font-medium"><StudioSectionIcon kind="content" />{t("studio.content.title").replace(/^\p{Extended_Pictographic}\s*/u, "")}</span>
           <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">
             {t("studio.content.visible", { count: live })}
           </span>

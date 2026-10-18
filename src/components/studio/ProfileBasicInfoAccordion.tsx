@@ -1,4 +1,5 @@
 import { BioTranslator } from "./BioTranslator";
+import { StudioSectionIcon } from "./StudioSectionIcon";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Check, Loader2, MapPin, Smile } from "lucide-react";
@@ -150,7 +151,7 @@ export function ProfileBasicInfoAccordion({
     >
       <AccordionTrigger className="hover:no-underline">
         <span className="flex flex-1 items-center justify-between gap-3 pr-2">
-          <span className="text-base font-medium">{t("studio.basic.title")}</span>
+          <span className="flex min-w-0 items-center gap-2 text-base font-medium"><StudioSectionIcon kind="profile" />{t("studio.basic.title").replace(/^\p{Extended_Pictographic}\s*/u, "")}</span>
           <span className="text-[11px] text-muted-foreground">
             {saving ? (
               <span className="inline-flex items-center gap-1">

@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { StudioSectionIcon } from "./StudioSectionIcon";
 import { useRef, useState } from "react";
 import { GripVertical } from "lucide-react";
 import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -67,7 +68,7 @@ export function ProfileFavoritesAccordion({
     >
       <AccordionTrigger className="hover:no-underline">
         <span className="flex flex-1 items-center justify-between gap-3 pr-2">
-          <span className="text-base font-medium">{t("studio.favorites.title")}</span>
+          <span className="flex min-w-0 items-center gap-2 text-base font-medium"><StudioSectionIcon kind="favorites" />{t("studio.favorites.title").replace(/^\p{Extended_Pictographic}\s*/u, "")}</span>
           <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">
             {favorites.length}/{MAX_FAVORITES}
           </span>
