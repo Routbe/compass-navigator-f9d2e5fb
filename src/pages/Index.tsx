@@ -8,7 +8,10 @@ import { QRPreview } from "@/components/QRPreview";
 import { QRTypeSelector, QRType } from "@/components/QRTypeSelector";
 import { QRTypeSheet } from "@/components/QRTypeSheet";
 import { useI18n } from "@/lib/i18n";
-import { publishQrDesign } from "@/lib/qr-design-bridge";
+import { publishQrDesign, currentProfileQrStyle } from "@/lib/qr-design-bridge";
+import { getQrSettingsFn } from "@/lib/qr-settings.functions";
+import { useServerFn } from "@tanstack/react-start";
+import { useAuth } from "@/hooks/useAuth";
 
 import { QRStyleTabs, FrameStyle } from "@/components/QRStyleTabs";
 import { ProfileShowcase } from "@/components/home/ProfileShowcase";
@@ -31,6 +34,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const Index = () => {
   const { t } = useI18n();
+  const { user } = useAuth();
+  const loadQrSettings = useServerFn(getQrSettingsFn);
   // QR Type
   const [qrType, setQrType] = useState<QRType>("url");
   // Mobile tier-1 category (desktop sidebar keeps its own state).
@@ -85,11 +90,30 @@ const Index = () => {
   const [outerCornerStyle, setOuterCornerStyle] = useState<CornerSquareType>("square");
   const [innerCornerStyle, setInnerCornerStyle] = useState<CornerDotType>("square");
   const [logoSize, setLogoSize] = useState(0.4);
-  useEffect(() => {
-    publishQrDesign({ fgColor, bgColor, dotStyle, outerCornerStyle, innerCornerStyle, bgGradient, logo });
-  }, [fgColor, bgColor, dotStyle, outerCornerStyle, innerCornerStyle, bgGradient, logo]);
   const [logoMargin, setLogoMargin] = useState(10);
   const [hideBackgroundDots, setHideBackgroundDots] = useState(true);
+  useEffect(() => {
+    publishQrDesign({ fgColor, bgColor, dotStyle, outerCornerStyle, innerCornerStyle, bgGradient, logo, logoSize, logoMargin, hideBackgroundDots });
+  }, [fgColor, bgColor, dotStyle, outerCornerStyle, innerCornerStyle, bgGradient, logo, logoSize, logoMargin, hideBackgroundDots]);
+  useEffect(() => {
+    if (qrType !== "social" || !user) return;
+    let cancelled = false;
+    const before = JSON.stringify(currentProfileQrStyle());
+    void loadQrSettings().then(style => {
+      if (cancelled || !style || before !== JSON.stringify(currentProfileQrStyle())) return;
+      setFgColor(style.fgColor);
+      setBgColor(style.bgColor);
+      setBgGradient(style.bgGradient ?? null);
+      setLogo(style.logo ?? null);
+      setDotStyle((style.dotStyle ?? "square") as DotType);
+      setOuterCornerStyle((style.outerCornerStyle ?? "square") as CornerSquareType);
+      setInnerCornerStyle((style.innerCornerStyle ?? "square") as CornerDotType);
+      setLogoSize(style.logoSize ?? 0.4);
+      setLogoMargin(style.logoMargin ?? 10);
+      setHideBackgroundDots(style.hideBackgroundDots ?? true);
+    }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [qrType, user?.id, loadQrSettings]);
 
   const shapePresetMap: Record<
     BodyShape,

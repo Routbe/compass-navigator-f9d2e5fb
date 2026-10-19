@@ -2,6 +2,7 @@ import { runSchemaEnsure } from "@/lib/db/schema-ensure.server";
 import { sql } from "@/lib/neon";
 import type { AliasProfileInput } from "@/lib/alias-profile.server";
 import type { StudioProfileInput } from "@/lib/studio-profile.server";
+import type { ProfileQrStyle } from "@/lib/profile-qr";
 
 export type ProfileSpace = "verified" | "alias";
 export type ProfileDraftPayload = StudioProfileInput | AliasProfileInput;
@@ -85,6 +86,26 @@ export async function readOrCreateProfileDraft(
     payload: (row["payload"] as SerializableDraftPayload | null) ?? (livePayload as SerializableDraftPayload),
     meta: rowMeta(row),
   };
+}
+
+/** A standalone QR save publishes only the QR and patches the private draft.
+ * Bumping its revision refuses any already-open editor's stale full-prefs write. */
+export async function savePublishedProfileQr(userId: string, style: ProfileQrStyle): Promise<void> {
+  await ensureDraftTable();
+  const encoded = JSON.stringify(style);
+  const results = await sql.transaction([
+    sql`update public.profiles
+      set display_prefs = jsonb_set(coalesce(display_prefs, '{}'::jsonb), '{qrSettings}', ${encoded}::jsonb, true)
+      where id = ${userId} returning id`,
+    sql`update public.profile_drafts
+      set payload = jsonb_set(payload, '{displayPrefs}',
+            coalesce(payload->'displayPrefs', '{}'::jsonb) || jsonb_build_object('qrSettings', ${encoded}::jsonb), true),
+          revision = revision + 1,
+          published_revision = case when published_revision = revision then revision + 1 else published_revision end,
+          updated_at = now()
+      where user_id = ${userId} and space = 'verified'`,
+  ]);
+  if (!results[0]?.length) throw new Error("profile_not_found");
 }
 
 export async function saveProfileDraft(

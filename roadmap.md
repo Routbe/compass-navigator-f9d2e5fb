@@ -1,4 +1,6 @@
 # Roadmap
+- [x] Mobile dashboard heading: text uses full width, actions underneath; QR fills/logo settings retained in live and draft storage, shared SVG/PNG embed gradients
+- [ ] Signed-in dashboard and QR save → profile share check — waits on an active ROUT session; renderer/mobile public checks and 17 focused tests pass
 - [ ] Studio revision: click-again page switch, folder symbols, inline typography control, questions/guestbook in content with visibility toggles, inline granted badges and recipient email
 - [ ] Uploaded gift/credential brief: db/99 prepared, awaiting exact Neon change confirmation; badge implementation and API still pending
 - [ ] Admin gifts: new fixed/percentage form, private username lookup, preview, resend and mail-status handling implemented; real admin-session creation and mail delivery unverified

@@ -26,6 +26,9 @@ export interface ProfileQrStyle {
   bgGradient?: string | null;
   /** Eigen logo (https-URL of kleine data-URI). Geen logo = niets in het midden. */
   logo?: string | null;
+  logoSize?: number;
+  logoMargin?: number;
+  hideBackgroundDots?: boolean;
 }
 
 export const DEFAULT_PROFILE_QR_STYLE: ProfileQrStyle = {

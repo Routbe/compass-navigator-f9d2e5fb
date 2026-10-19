@@ -1,4 +1,5 @@
 import type { ProfileQrStyle, QrCornerStyle } from "@/lib/profile-qr";
+import { validQrGradient } from "@/lib/qr-background";
 
 /** Standaard ROUT-stijl (gelijk aan DEFAULT_PROFILE_QR_STYLE, zonder de QR-engine te importeren). */
 export const ROUT_QR_DEFAULT: ProfileQrStyle = {
@@ -17,7 +18,7 @@ export function normalizeQrSettings(raw: unknown): ProfileQrStyle | null {
   const r = raw as Record<string, unknown>;
   if (Object.keys(r).length === 0) return null;
   const fg = typeof r["fgColor"] === "string" && HEX.test(r["fgColor"]) ? r["fgColor"] : ROUT_QR_DEFAULT.fgColor;
-  const bg = typeof r["bgColor"] === "string" && HEX.test(r["bgColor"]) ? r["bgColor"] : ROUT_QR_DEFAULT.bgColor;
+  const bg = typeof r["bgColor"] === "string" && (HEX.test(r["bgColor"]) || r["bgColor"] === "transparent") ? r["bgColor"] : ROUT_QR_DEFAULT.bgColor;
   const corner = CORNERS.includes(r["cornerStyle"] as QrCornerStyle)
     ? (r["cornerStyle"] as QrCornerStyle)
     : ROUT_QR_DEFAULT.cornerStyle;
@@ -26,7 +27,7 @@ export function normalizeQrSettings(raw: unknown): ProfileQrStyle | null {
   const dotStyle = str("dotStyle", SHAPE);
   const outerCornerStyle = str("outerCornerStyle", SHAPE);
   const innerCornerStyle = str("innerCornerStyle", SHAPE);
-  const bgGradient = str("bgGradient", /^(linear|radial|conic)-gradient\([#%(),.\w\s-]{1,300}\)$/);
+  const bgGradient = typeof r["bgGradient"] === "string" && validQrGradient(r["bgGradient"]) ? r["bgGradient"] : undefined;
   const logo =
     typeof r["logo"] === "string" &&
     (/^https:\/\/[^\s"'<>]{1,500}$/.test(r["logo"]) ||
@@ -35,5 +36,9 @@ export function normalizeQrSettings(raw: unknown): ProfileQrStyle | null {
       : undefined;
   // Konijn alleen als expliciet opgeslagen; nooit meer standaard.
   const emblem = r["emblem"] === true && !logo ? true : false;
-  return { fgColor: fg, bgColor: bg, cornerStyle: corner, emblem, dotStyle, outerCornerStyle, innerCornerStyle, bgGradient, logo };
+  const bounded = (key: string, min: number, max: number) =>
+    typeof r[key] === "number" && Number.isFinite(r[key]) && r[key] >= min && r[key] <= max ? r[key] as number : undefined;
+  return { fgColor: fg, bgColor: bg, cornerStyle: corner, emblem, dotStyle, outerCornerStyle, innerCornerStyle, bgGradient, logo,
+    logoSize: bounded("logoSize", 0, 1), logoMargin: bounded("logoMargin", 0, 100),
+    hideBackgroundDots: typeof r["hideBackgroundDots"] === "boolean" ? r["hideBackgroundDots"] : undefined };
 }

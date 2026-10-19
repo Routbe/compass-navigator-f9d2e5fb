@@ -231,13 +231,13 @@ export default function Dashboard() {
               </Link>
             </Button>
           </div>
-          <div className="flex w-full gap-2 sm:hidden mt-3">
-            <Button asChild size="sm" variant="outline" className="flex-1 gap-1.5">
+          <div className="grid w-full grid-cols-2 gap-2 sm:hidden">
+            <Button asChild size="sm" variant="outline" className="min-h-12 min-w-0 gap-1.5">
               <Link to="/studio">
                 <Sparkles className="h-4 w-4" /> {t("studio.dashboard.studio")}
               </Link>
             </Button>
-            <Button asChild size="sm" className="flex-1 gap-1.5 bg-primary text-primary-foreground">
+            <Button asChild size="sm" className="min-h-12 min-w-0 gap-1.5 bg-primary text-primary-foreground">
               <Link to="/">
                 <Plus className="h-4 w-4" /> {t("studio.dashboard.new")}
               </Link>
