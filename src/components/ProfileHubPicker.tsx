@@ -3,6 +3,7 @@ import { BadgeCheck, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/lib/router-compat";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useServerFn } from "@tanstack/react-start";
 import { getStudioProfile } from "@/lib/studio-profile.functions";
 import { saveQrSettingsFn } from "@/lib/qr-settings.functions";
@@ -139,7 +140,7 @@ export function ProfileHubPicker({ values, onChange }: Props) {
         </p>
       </div>
 
-      <button
+      <Button
         type="button"
         onClick={() => void saveDesign()}
         disabled={saving || !user}
@@ -147,7 +148,7 @@ export function ProfileHubPicker({ values, onChange }: Props) {
       >
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saved ? <Check className="h-4 w-4" /> : null}
         {!user ? "Log in om op te slaan" : saved ? "Opgeslagen" : "Opslaan"}
-      </button>
+      </Button>
       <Link to="/studio" className="block text-center text-[12px] text-muted-foreground underline-offset-4 hover:underline">
         Beheer profielhub →
       </Link>

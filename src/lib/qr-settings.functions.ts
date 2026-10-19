@@ -2,6 +2,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireAuth } from "@/lib/auth/middleware";
 import { normalizeQrSettings } from "@/lib/qr-settings";
 
+export const getQrSettingsFn = createServerFn({ method: "GET" })
+  .middleware([requireAuth])
+  .handler(async ({ context }) => {
+    const { sql } = await import("@/lib/neon");
+    const rows = await sql`select display_prefs->'qrSettings' as style from public.profiles where id = ${context.userId}`;
+    return normalizeQrSettings(rows[0]?.style);
+  });
+
 /** Standalone opslag van de profiel-QR-stijl in `profiles.display_prefs->'qrSettings'`. */
 export const saveQrSettingsFn = createServerFn({ method: "POST" })
   .middleware([requireAuth])
