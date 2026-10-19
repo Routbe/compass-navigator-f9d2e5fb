@@ -15,36 +15,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { downloadCardPdf, downloadCardPng, type CardInput } from "@/lib/business-card";
 import { joinNfcWaitlist } from "@/lib/nfc-waitlist.functions";
 import { cn } from "@/lib/utils";
-import { DEFAULT_PROFILE_QR_STYLE, profileQrSvg, type ProfileQrStyle } from "@/lib/profile-qr";
-
-/** Rendert exact het ontwerp uit de QR-ontwerper (zelfde motor), in de browser. */
-async function renderDesign(url: string, qs: ProfileQrStyle, format: "svg" | "png"): Promise<string> {
-  const { default: QRCodeStyling } = await import("qr-code-styling");
-  const dot = (qs.dotStyle ?? (qs.cornerStyle === "dots" ? "dots" : qs.cornerStyle === "smooth" ? "rounded" : "square")) as never;
-  const qr = new QRCodeStyling({
-    width: 512,
-    height: 512,
-    margin: 16,
-    type: format === "svg" ? "svg" : "canvas",
-    data: url,
-    dotsOptions: { color: qs.fgColor, type: dot },
-    cornersSquareOptions: { color: qs.fgColor, type: (qs.outerCornerStyle ?? "square") as never },
-    cornersDotOptions: { color: qs.fgColor, type: (qs.innerCornerStyle ?? "square") as never },
-    backgroundOptions: { color: qs.bgGradient ? "transparent" : qs.bgColor || "#FFFFFF" },
-    image: qs.logo || undefined,
-    imageOptions: { crossOrigin: "anonymous", margin: 8, hideBackgroundDots: true },
-    qrOptions: { errorCorrectionLevel: "H" },
-  });
-  const raw = await qr.getRawData(format);
-  if (!raw) throw new Error("qr");
-  const blob = raw instanceof Blob ? raw : new Blob([raw as BlobPart]);
-  return await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
+import { DEFAULT_PROFILE_QR_STYLE, type ProfileQrStyle } from "@/lib/profile-qr";
+import { renderProfileQr } from "@/lib/profile-qr-render";
 
 type Props = {
   url: string;
@@ -69,10 +41,14 @@ export function ShareMenu({ url, handle, name, bio, avatarUrl, showNfc, qrStyle,
   const [svgSrc, setSvgSrc] = useState("");
   const [pngSrc, setPngSrc] = useState("");
   const styleKey = JSON.stringify(qs);
+  const [qrFailed, setQrFailed] = useState(false);
   useEffect(() => {
     let cancelled = false;
-    Promise.all([renderDesign(url, qs, "svg"), renderDesign(url, qs, "png")])
-      .then(([svg, png]) => {
+    setSvgSrc("");
+    setPngSrc("");
+    setQrFailed(false);
+    renderProfileQr(url, qs)
+      .then(({ svg, png }) => {
         if (!cancelled) {
           setSvgSrc(svg);
           setPngSrc(png);
@@ -80,15 +56,14 @@ export function ShareMenu({ url, handle, name, bio, avatarUrl, showNfc, qrStyle,
       })
       .catch(() => {
         if (cancelled) return;
-        const svg = profileQrSvg(url, qs, { size: 512 });
-        setSvgSrc(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`);
+        setQrFailed(true);
+        toast.error(t("profile.generationFailed"));
       });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, styleKey]);
-  const qrBg = qs.bgGradient ? { background: qs.bgGradient } : undefined;
 
   const qrDataUrl = () => pngSrc;
   const card = (): CardInput => ({ name: name || `@${handle}`, handle, bio: bio ?? "", url, avatarUrl, qrDataUrl: qrDataUrl() });
@@ -129,16 +104,16 @@ export function ShareMenu({ url, handle, name, bio, avatarUrl, showNfc, qrStyle,
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-60">
           <DropdownMenuItem onSelect={() => setQrOpen(true)} className="justify-center p-3" aria-label={t("profile.fullscreenQr")}>
-            {svgSrc ? <img src={svgSrc} alt={`QR-code voor ${handle}`} style={qrBg} className="h-28 w-28 rounded-lg" /> : <div className="h-28 w-28 animate-pulse rounded-lg bg-muted" />}
+            {svgSrc ? <img src={svgSrc} alt={`QR-code voor ${handle}`} className="h-28 w-28 rounded-lg" /> : qrFailed ? <p className="text-xs text-muted-foreground">{t("profile.generationFailed")}</p> : <div className="h-28 w-28 animate-pulse rounded-lg bg-muted" />}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => void copy()}>
             <Copy className="mr-2 h-4 w-4" aria-hidden />  {t("profile.copyLink")} </DropdownMenuItem>
-          <DropdownMenuItem onSelect={downloadQrPng}>
+          <DropdownMenuItem disabled={!pngSrc} onSelect={downloadQrPng}>
             <QrCode className="mr-2 h-4 w-4" aria-hidden />  {t("profile.downloadQr")} </DropdownMenuItem>
-          <DropdownMenuItem onSelect={run(() => downloadCardPng(card()))}>
+          <DropdownMenuItem disabled={!pngSrc} onSelect={run(() => downloadCardPng(card()))}>
             <ImageDown className="mr-2 h-4 w-4" aria-hidden />  {t("profile.cardImage")} </DropdownMenuItem>
-          <DropdownMenuItem onSelect={run(() => downloadCardPdf(card()))}>
+          <DropdownMenuItem disabled={!pngSrc} onSelect={run(() => downloadCardPdf(card()))}>
             <FileDown className="mr-2 h-4 w-4" aria-hidden />  {t("profile.cardPdf")} </DropdownMenuItem>
           {showNfc && (
             <>
@@ -156,11 +131,11 @@ export function ShareMenu({ url, handle, name, bio, avatarUrl, showNfc, qrStyle,
             <DialogTitle> {t("profile.qrCode")} </DialogTitle>
             <DialogDescription> {t("profile.scanProfilePrefix")} {handle}  {t("profile.scanProfileSuffix")} </DialogDescription>
           </DialogHeader>
-          <img src={svgSrc} alt={`QR-code voor ${handle}`} style={qrBg} className="aspect-square w-full max-w-[min(90vw,80dvh)] rounded-xl" />
+          {svgSrc && <img src={svgSrc} alt={`QR-code voor ${handle}`} className="aspect-square w-full max-w-[min(90vw,80dvh)] rounded-xl" />}
           <p className="text-sm font-medium">@{handle}</p>
           <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={downloadQrPng}>PNG</Button>
-            <Button type="button" variant="outline" onClick={downloadQr}>SVG</Button>
+            <Button type="button" variant="outline" disabled={!pngSrc} onClick={downloadQrPng}>PNG</Button>
+            <Button type="button" variant="outline" disabled={!svgSrc} onClick={downloadQr}>SVG</Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -14,6 +14,9 @@ export interface GeneratorDesign {
   innerCornerStyle?: string;
   bgGradient?: string | null;
   logo?: string | null;
+  logoSize?: number;
+  logoMargin?: number;
+  hideBackgroundDots?: boolean;
 }
 
 let current: GeneratorDesign | null = null;
@@ -27,7 +30,7 @@ const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 /** Maps generator styling onto the profile QR style stored in display_prefs.qrSettings. */
 export function toProfileQrStyle(design: GeneratorDesign | null): ProfileQrStyle {
   const fg = design && HEX.test(design.fgColor) ? design.fgColor : "#1A1A1A";
-  const bg = design && HEX.test(design.bgColor) ? design.bgColor : "#FFFFFF";
+  const bg = design && (HEX.test(design.bgColor) || design.bgColor === "transparent") ? design.bgColor : "#FFFFFF";
   const dot = design?.dotStyle ?? "square";
   const cornerStyle: QrCornerStyle = dot === "dots" ? "dots" : /round|classy/.test(dot) ? "smooth" : "square";
   const raw = {
@@ -40,6 +43,9 @@ export function toProfileQrStyle(design: GeneratorDesign | null): ProfileQrStyle
     innerCornerStyle: design?.innerCornerStyle,
     bgGradient: design?.bgGradient ?? null,
     logo: design?.logo ?? null,
+    logoSize: design?.logoSize,
+    logoMargin: design?.logoMargin,
+    hideBackgroundDots: design?.hideBackgroundDots,
   };
   return normalizeQrSettings(raw) ?? { fgColor: fg, bgColor: bg, cornerStyle, emblem: false };
 }

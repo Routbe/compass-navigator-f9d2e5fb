@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Mobile dashboard heading and profile QR save/share fidelity
 - [ ] Studio revision: click-again page switch, folder symbols, inline typography control, questions/guestbook in content with visibility toggles, inline granted badges and recipient email
 - [ ] Uploaded gift/credential brief: db/99 prepared, awaiting exact Neon change confirmation; badge implementation and API still pending
 - [ ] Admin gifts: new fixed/percentage form, private username lookup, preview, resend and mail-status handling implemented; real admin-session creation and mail delivery unverified

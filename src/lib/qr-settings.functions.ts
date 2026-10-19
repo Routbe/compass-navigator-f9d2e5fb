@@ -11,11 +11,7 @@ export const saveQrSettingsFn = createServerFn({ method: "POST" })
     return style;
   })
   .handler(async ({ data, context }) => {
-    const { sql } = await import("@/lib/neon");
-    await sql`
-      update public.profiles
-         set display_prefs = jsonb_set(coalesce(display_prefs, '{}'::jsonb), '{qrSettings}', ${JSON.stringify(data)}::jsonb, true)
-       where id = ${context.userId}
-    `;
+    const { savePublishedProfileQr } = await import("@/lib/profile-drafts.server");
+    await savePublishedProfileQr(context.userId, data);
     return { ok: true as const, qrSettings: data };
   });

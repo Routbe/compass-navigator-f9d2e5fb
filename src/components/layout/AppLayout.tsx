@@ -56,7 +56,7 @@ export function AppLayout({
   const Frame = usePortalFrame();
   const heading = (
           (crumbs?.length || title) ? (
-            <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 sm:flex sm:flex-wrap sm:justify-between">
+            <div className="mb-6 grid grid-cols-1 items-end gap-4 sm:flex sm:flex-wrap sm:justify-between">
               <div className="min-w-0">
                 {crumbs?.length ? (
                   <nav
@@ -87,7 +87,7 @@ export function AppLayout({
                   <p className="mt-1 text-sm text-muted-foreground">{description}</p>
                 ) : null}
               </div>
-              {actions ? <div className="shrink-0">{actions}</div> : null}
+              {actions ? <div className="min-w-0 w-full sm:w-auto sm:shrink-0">{actions}</div> : null}
             </div>
           ) : null
   );

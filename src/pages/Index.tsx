@@ -85,11 +85,11 @@ const Index = () => {
   const [outerCornerStyle, setOuterCornerStyle] = useState<CornerSquareType>("square");
   const [innerCornerStyle, setInnerCornerStyle] = useState<CornerDotType>("square");
   const [logoSize, setLogoSize] = useState(0.4);
-  useEffect(() => {
-    publishQrDesign({ fgColor, bgColor, dotStyle, outerCornerStyle, innerCornerStyle, bgGradient, logo });
-  }, [fgColor, bgColor, dotStyle, outerCornerStyle, innerCornerStyle, bgGradient, logo]);
   const [logoMargin, setLogoMargin] = useState(10);
   const [hideBackgroundDots, setHideBackgroundDots] = useState(true);
+  useEffect(() => {
+    publishQrDesign({ fgColor, bgColor, dotStyle, outerCornerStyle, innerCornerStyle, bgGradient, logo, logoSize, logoMargin, hideBackgroundDots });
+  }, [fgColor, bgColor, dotStyle, outerCornerStyle, innerCornerStyle, bgGradient, logo, logoSize, logoMargin, hideBackgroundDots]);
 
   const shapePresetMap: Record<
     BodyShape,

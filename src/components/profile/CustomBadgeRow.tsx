@@ -23,7 +23,7 @@ function formatDate(iso: string | null) {
 }
 
 /** Digitaal paspoort: badges as stamps; a click opens the stamp with date, emblem and reason. */
-export function ProfilePassport({ handle, theme }: { handle: string | null | undefined; theme: { card: string; border: string; text: string; muted: string } }) {
+export function ProfilePassport({ handle, theme, compact = false }: { handle: string | null | undefined; theme: { card: string; border: string; text: string; muted: string }; compact?: boolean }) {
   const { t } = useTranslation();
   const load = useServerFn(getPublicCustomBadges);
   const [items, setItems] = useState<Item[]>([]);
@@ -44,12 +44,12 @@ export function ProfilePassport({ handle, theme }: { handle: string | null | und
   const since = formatDate(open?.grantedAt ?? null);
   return (
     <>
-      <section aria-label={t("profile.passport")} className={`mt-6 w-full border-y py-5 ${theme.border}`}>
-        <header className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+      <section aria-label={t("profile.passport")} className={compact ? "inline-flex shrink-0" : `mt-6 w-full border-y py-5 ${theme.border}`}>
+        {!compact && <header className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
           <h2 className={`font-display text-sm ${theme.text}`}> {t("profile.passport")} </h2>
           <span className={`text-xs ${theme.muted}`}>{items.length} {items.length === 1 ? t("profile.stamp") : t("profile.stamps")}</span>
-        </header>
-        <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+        </header>}
+        <ul className={compact ? "flex flex-wrap items-center gap-1" : "grid grid-cols-3 gap-3 sm:grid-cols-4"}>
           {items.map((b, i) => (
             <li key={b.slug}>
               <Button variant="ghost"
@@ -57,11 +57,11 @@ export function ProfilePassport({ handle, theme }: { handle: string | null | und
                 onClick={() => setOpen(b)}
                 aria-label={t("profile.viewStamp", { name: b.name })}
                 style={{ borderColor: b.accentColor ?? undefined, rotate: `${((i * 37) % 13) - 6}deg` }}
-                className="flex aspect-square h-auto w-full whitespace-normal flex-col items-center justify-center gap-1 rounded-full border-2 border-dashed border-primary/60 p-2 motion-safe:transition-transform motion-safe:hover:scale-105 [&_svg]:size-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className={compact ? "size-7 shrink-0 rounded-full p-0 [&_svg]:size-5" : "flex aspect-square h-auto w-full whitespace-normal flex-col items-center justify-center gap-1 rounded-full border-2 border-dashed border-primary/60 p-2 motion-safe:transition-transform motion-safe:hover:scale-105 [&_svg]:size-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"}
               >
-                <BadgeEmblem badge={b} size={40} />
-                <span className={`line-clamp-2 max-w-full break-words text-[10px] font-medium leading-tight ${theme.text}`}>{b.name}</span>
-                {b.grantedAt && <span className={`text-[9px] ${theme.muted}`}>{new Date(b.grantedAt).toLocaleDateString("nl-BE", { month: "short", year: "numeric" })}</span>}
+                <BadgeEmblem badge={b} size={compact ? 20 : 40} />
+                {!compact && <span className={`line-clamp-2 max-w-full break-words text-[10px] font-medium leading-tight ${theme.text}`}>{b.name}</span>}
+                {!compact && b.grantedAt && <span className={`text-[9px] ${theme.muted}`}>{new Date(b.grantedAt).toLocaleDateString("nl-BE", { month: "short", year: "numeric" })}</span>}
               </Button>
             </li>
           ))}
@@ -124,4 +124,8 @@ export function ProfilePassport({ handle, theme }: { handle: string | null | und
       </Dialog>
     </>
   );
+}
+
+export function ProfileNameBadges(props: Parameters<typeof ProfilePassport>[0]) {
+  return <ProfilePassport {...props} compact />;
 }
