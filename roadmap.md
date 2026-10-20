@@ -1,4 +1,10 @@
 # Roadmap
+- [ ] Studio: drawn top-level pictograms, remove duplicate QR settings, inline Knopvorm/Typografie customize controls, faithful Live examples
+- [ ] Anonymous questions: avatar answer stories, per-answer ROUT visibility and supported sharing; unsupported automatic external stories marked coming soon
+- [ ] Domains: Bluesky handle failure, subdomain Mastodon verification, Vercel nested subdomain routing and honest fallback/recovery opt-in
+- [ ] Workspaces: auth-first personal/business intent, inactive owner profile, workspace Studio context, business/domain verification and information pages
+- [ ] Admin: personal/workspace allowed handles, handle locking, identity correction/revocation/free retry, active/featured curation
+- [ ] Availability/recovery and business application emails — sender setup and delivery verification required; pricing awaits confirmed fee
 - [x] Mobile dashboard heading: text uses full width, actions underneath; QR fills/logo settings retained in live and draft storage, shared SVG/PNG embed gradients
 - [ ] Signed-in dashboard and QR save → profile share check — waits on an active ROUT session; renderer/mobile public checks and 17 focused tests pass
 - [ ] Studio revision: click-again page switch, folder symbols, inline typography control, questions/guestbook in content with visibility toggles, inline granted badges and recipient email
