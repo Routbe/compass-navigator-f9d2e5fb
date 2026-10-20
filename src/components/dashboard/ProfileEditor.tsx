@@ -48,7 +48,6 @@ import { Input } from "@/components/ui/input";
 import { InfoHint } from "@/components/InfoHint";
 import { VerifiedBadgeCard } from "@/components/dashboard/VerifiedBadgeCard";
 import { SocialSharingCard } from "@/components/dashboard/SocialSharingCard";
-import { ProfileQrCard } from "@/components/dashboard/ProfileQrCard";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
@@ -926,8 +925,8 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
         aria-label="Studio"
         className="sticky top-14 z-20 flex w-full gap-1 overflow-x-auto rounded-2xl border border-border bg-card/95 p-1 backdrop-blur [scrollbar-width:none] supports-[backdrop-filter]:bg-card/80 [&::-webkit-scrollbar]:hidden"
       >
-        {visibleTabs.map(({ id, label, icon: Icon }) => (
-          <button
+        {visibleTabs.map(({ id }) => (
+          <Button
             key={id}
             role="tab"
             type="button"
@@ -941,9 +940,9 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
-            <Icon className="h-3.5 w-3.5" aria-hidden />
+            <StudioSectionIcon kind={id === "links" ? "content" : id} className="size-4 text-current" />
             {t(`studio.tab.${id}`)}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -1035,7 +1034,7 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                 className="rounded-2xl border border-border bg-card px-4 sm:px-5"
               >
                 <AccordionTrigger className="hover:no-underline">
-                  <span className="text-base font-medium">{t("studio.editor.privacySharing")}</span>
+                  <span className="flex min-w-0 items-center gap-2 text-base font-medium"><StudioSectionIcon kind="settings" />{t("studio.editor.privacySharing")}</span>
                 </AccordionTrigger>
                 <AccordionContent className="space-y-4 pb-5">
                   {/* Eén bron van waarheid: QR-styling gebeurt in de generator. */}
@@ -1374,24 +1373,6 @@ export function ProfileEditor({ variant = "verified" }: { variant?: ProfileVaria
                     bio={tagline}
                     prefs={prefs}
                     setPref={setPref}
-                  />
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem
-                value="profile_qr"
-                className="rounded-2xl border border-border bg-card px-4 sm:px-5"
-              >
-                <AccordionTrigger className="hover:no-underline">
-                  <span className="text-base font-medium">{t("studio.editor.qrTitle")}</span>
-                </AccordionTrigger>
-                <AccordionContent className="space-y-4 pb-5">
-                  <ProfileQrCard
-                    handle={handle || ""}
-                    urlStyle={urlStyle}
-                    theme={theme}
-                    value={prefs.qrSettings ?? null}
-                    onChange={(next) => setPref("qrSettings", next)}
                   />
                 </AccordionContent>
               </AccordionItem>
