@@ -59,7 +59,7 @@ import { BadgeShowcase } from "@/components/profile/BadgeShowcase";
 import { VerifiedInfoDialog } from "@/components/profile/VerifiedInfoDialog";
 import { monthYear } from "@/components/profile/VerifiedBadgePopover";
 import { ProfileBadge } from "@/components/profile/ProfileBadge";
-import { ProfilePassport, ProfileNameBadges } from "@/components/profile/CustomBadgeRow";
+import { ProfilePassport } from "@/components/profile/CustomBadgeRow";
 import type { BadgeType } from "@/lib/profile-display";
 import { EarlyBelieverBadge } from "@/components/profile/EarlyBelieverBadge";
 import {
@@ -423,7 +423,7 @@ export function ProfileView({
               mutedColor={t.muted}
             />
           )}
-          <ProfileNameBadges handle={profile.username} theme={t} />
+          <ProfilePassport handle={profile.username} theme={t} compact />
         </h1>
         {profile.username && <SnapchatProfile handle={profile.username} theme={t} />}
         {profile.username && <NowPlaying handle={profile.username} theme={t} />}
