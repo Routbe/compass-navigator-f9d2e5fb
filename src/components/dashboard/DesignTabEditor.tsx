@@ -218,7 +218,7 @@ export function DesignTile({
 /** Ronde "aanpassen"-knop, dezelfde als bij Achtergrond & Visual FX. */
 function CustomizeButton({ open, onToggle, label, controls }: { open: boolean; onToggle: () => void; label: string; controls: string }) {
   return (
-    <button
+    <Button
       type="button"
       aria-label={label}
       aria-expanded={open}
@@ -226,12 +226,12 @@ function CustomizeButton({ open, onToggle, label, controls }: { open: boolean; o
       title={label}
       onClick={onToggle}
       className={cn(
-        "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors",
+        "flex size-9 shrink-0 items-center justify-center rounded-full border p-0 transition-colors",
         open ? "border-primary/50 bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground",
       )}
     >
       <SlidersHorizontal className="h-4 w-4" />
-    </button>
+    </Button>
   );
 }
 
@@ -507,12 +507,11 @@ export function DesignButtonsTypographySection({
   return (
     <div className="space-y-5">
       <section className="space-y-3">
-        <div className="flex items-start justify-between gap-3">
-          <div><p className="text-sm font-medium">🔘 Knoppen</p><p className="mt-1 text-xs text-muted-foreground">Vorm, maat, kleur en beweging los instellen.</p></div>
+        <div className="flex min-w-0 items-center gap-2">
+          <p className="input-label">Knopvorm</p>
           <CustomizeButton open={prefs.buttonsCustom} onToggle={() => setPref("buttonsCustom", !prefs.buttonsCustom)} label="Knoppen aanpassen" controls="buttons-advanced" />
         </div>
         <CustomCollapse open={prefs.buttonsCustom} id="buttons-advanced">
-          <p className="input-label">Knopvorm</p>
           <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Knopvorm">
             {([["bar", "Lijn met naam"], ["icon", "Ronde bol (alleen icoon)"]] as const).map(([id, label]) => (
               <button key={id} type="button" role="radio" aria-checked={prefs.buttonShape === id} onClick={() => setPref("buttonShape", id)}
@@ -564,8 +563,8 @@ export function DesignButtonsTypographySection({
       </section>
 
       <section className="space-y-3 border-t border-border pt-4">
-        <div className="flex items-start justify-between gap-3">
-          <div><p className="text-sm font-medium">🔤 Naam &amp; typografie</p><p className="mt-1 text-xs text-muted-foreground">Lettertype, schaal, afstand en gloed verfijnen.</p></div>
+        <div className="flex min-w-0 items-center gap-2">
+          <p className="input-label">Typografie</p>
           <CustomizeButton open={prefs.typographyCustom} onToggle={() => setPref("typographyCustom", !prefs.typographyCustom)} label="Typografie aanpassen" controls="type-advanced" />
         </div>
         <CustomCollapse open={prefs.typographyCustom} id="type-advanced">
