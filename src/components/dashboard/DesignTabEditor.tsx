@@ -47,7 +47,7 @@ type SetPref = <K extends keyof ProfileDisplayPrefs>(
 
 /** Knopafronding in px, voor de previewtegels. */
 export const radiusPx = (id: ProfileDisplayPrefs["buttonRadius"] | undefined) =>
-  (BUTTON_RADII.find((r) => r.id === id) ?? BUTTON_RADII[2]!).px;
+  (BUTTON_RADII.find((r) => r.id === id) ?? BUTTON_RADII[2])?.px ?? 8;
 
 /** Kleurkiezer met tint-, verzadiging- en helderheidsschuifjes; slaat hex op. */
 function AdvancedColorField({
@@ -225,9 +225,11 @@ function CustomizeButton({ open, onToggle, label, controls }: { open: boolean; o
       aria-controls={controls}
       title={label}
       onClick={onToggle}
+      variant="ghost"
+      size="icon"
       className={cn(
-        "flex size-9 shrink-0 items-center justify-center rounded-full border p-0 transition-colors",
-        open ? "border-primary/50 bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground",
+        "size-11 shrink-0 rounded-full p-0 transition-colors sm:size-9",
+        open ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground",
       )}
     >
       <SlidersHorizontal className="h-4 w-4" />

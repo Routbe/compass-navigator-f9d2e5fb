@@ -2,11 +2,11 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
-import { BadgeCheck, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import type { ShowcaseCard } from "@/lib/showcase.functions";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { proxied } from "@/lib/image-proxy-rules";
+import { ShowcaseAvatar, ShowcaseMark, ShowcaseName } from "@/components/profile/ShowcaseIdentity";
 
 /** Bento layout: first card large, then a repeating wide/square rhythm. */
 const SPAN = ["sm:col-span-2 sm:row-span-2", "", "", "sm:col-span-2", "", "sm:row-span-2", "", "sm:col-span-2"];
@@ -104,17 +104,11 @@ export function ExploreGallery({ cards, filters = false }: { cards: ShowcaseCard
               </div>
               <div className="mt-auto space-y-2 px-1 pb-1">
               <div className="flex items-center gap-3">
-                {c.avatarUrl ? (
-                  <img src={proxied(c.avatarUrl) ?? undefined} alt="" loading="lazy" className="h-9 w-9 shrink-0 rounded-full border border-border object-cover" />
-                ) : (
-                  <span className={cn("flex items-center justify-center rounded-full bg-muted font-serif font-semibold text-foreground", big ? "h-11 w-11 text-lg" : "h-9 w-9 text-base")}>
-                    {(c.displayName ?? c.handle).charAt(0).toUpperCase()}
-                  </span>
-                )}
+                <ShowcaseAvatar card={c} className={big ? "size-11 text-lg" : "size-9 text-base"} />
                 <div className="min-w-0">
                    <p className="flex items-center gap-1.5 font-serif text-base font-semibold text-foreground">
-                     <span className="truncate">{c.displayName ?? c.handle}</span>
-                    {c.verified && <BadgeCheck className="h-4 w-4 shrink-0 text-primary" aria-label={t("explore.filter.verified")} />}
+                     <ShowcaseName card={c} />
+                     <ShowcaseMark card={c} />
                   </p>
                   <p className="truncate font-mono text-xs text-muted-foreground">rout.be/{c.handle}</p>
                 </div>

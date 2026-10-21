@@ -34,11 +34,19 @@ function escapeRegex(v: string) {
  */
 export function bioContainsRoutLink(bio: string | null | undefined, username: string): boolean {
   if (!bio || !username || !/^[a-z0-9._-]{2,40}$/i.test(username)) return false;
+  const name = escapeRegex(username);
   const re = new RegExp(
-    `(?:^|[\\s"'(<>/:@]|www\\.)rout\\.be/${escapeRegex(username)}(?=[\\s"'/<>)?#,;!]|\\.(?![a-z0-9_-])|$)`,
+    `(?:^|[\\s"'(<>]|https?://)(?:www\\.)?(?:rout\\.be/(?:u/)?${name}|${name}\\.(?:u\\.|r\\.)?rout\\.be)(?=[\\s"'/<>)?#,;!]|\\.(?![a-z0-9_-])|$)`,
     "i",
   );
   return re.test(bio);
+}
+
+/** Exact first-party host ownership; never accept arbitrary nested labels. */
+export function isMemberRoutHost(host: string, username: string): boolean {
+  const name = username.toLowerCase().replace(/^@/, "");
+  if (!/^[a-z0-9._-]{2,40}$/.test(name)) return false;
+  return [`${name}.rout.be`, `${name}.u.rout.be`, `${name}.r.rout.be`].includes(host.toLowerCase());
 }
 
 /** A verification code stays valid this long. */

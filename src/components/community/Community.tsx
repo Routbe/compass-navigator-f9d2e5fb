@@ -1,19 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { BadgeCheck, Quote } from "lucide-react";
+import { Quote } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { ShowcaseCard } from "@/lib/showcase.functions";
 import type { CommunityReview, CommunityStats } from "@/lib/community.functions";
 import { cn } from "@/lib/utils";
 import { DragMarquee } from "./DragMarquee";
+import { ShowcaseAvatar, ShowcaseMark, ShowcaseName } from "@/components/profile/ShowcaseIdentity";
 
 function Avatar({ c, size = "h-10 w-10" }: { c: ShowcaseCard; size?: string }) {
-  return c.avatarUrl ? (
-    <img src={c.avatarUrl} alt="" loading="lazy" className={cn(size, "shrink-0 rounded-full border border-border object-cover")} />
-  ) : (
-    <span className={cn(size, "flex shrink-0 items-center justify-center rounded-full bg-muted font-serif font-semibold text-foreground")}>
-      {(c.displayName ?? c.handle).charAt(0).toUpperCase()}
-    </span>
-  );
+  return <ShowcaseAvatar card={c} className={size} />;
 }
 
 /** Endless avatar strip moving right → left; pauses on hover, draggable. One tap opens the profile. */
@@ -33,7 +28,7 @@ export function AvatarMarquee({ cards }: { cards: ShowcaseCard[] }) {
         >
           <Avatar c={c} size="h-8 w-8" />
           <span className="font-mono text-xs text-foreground">@{c.handle}</span>
-          {c.verified && <BadgeCheck className="h-3.5 w-3.5 text-primary" aria-hidden />}
+          <ShowcaseMark card={c} />
         </Link>
       ))}
     </DragMarquee>
@@ -57,8 +52,8 @@ export function ProfileCardGrid({ cards }: { cards: ShowcaseCard[] }) {
             <Avatar c={c} size="h-14 w-14" />
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 truncate font-serif text-lg font-semibold text-foreground">
-                {c.displayName ?? c.handle}
-                {c.verified && <BadgeCheck className="h-4 w-4 shrink-0 text-primary" aria-label={t("explore.filter.verified")} />}
+                <ShowcaseName card={c} />
+                <ShowcaseMark card={c} />
               </p>
               <p className="truncate font-mono text-xs text-muted-foreground">rout.be/{c.handle}</p>
             </div>

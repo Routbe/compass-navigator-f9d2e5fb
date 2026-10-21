@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireAuth } from "@/lib/auth/middleware";
+import { showcaseDisplay, type ShowcaseDisplay } from "./showcase-display";
 
 const FALLBACK = ["maximilien.brussels"];
 const handleSchema = z
@@ -50,6 +51,8 @@ export type ShowcaseCard = {
   bio: string | null;
   avatarUrl: string | null;
   verified: boolean;
+  theme?: string;
+  display?: ShowcaseDisplay;
 };
 
 /** Public: snapshot data for the /explore bento grid (private profiles are skipped). */
@@ -59,7 +62,8 @@ export const listShowcaseCards = createServerFn({ method: "GET" }).handler(async
   try {
     const { sql } = await import("@/lib/neon");
     const rows = (await sql`
-      select username, display_name, tagline, bio, avatar_url, coalesce(verified, false) as verified, display_prefs
+      select username, display_name, tagline, bio, avatar_url, coalesce(verified, false) as verified, display_prefs,
+             theme, is_business, is_influencer, subdomain_alias
         from public.profiles where lower(username) = any(${handles})
     `) as Record<string, unknown>[];
     const byHandle = new Map(rows.map((r) => [String(r["username"]).toLowerCase(), r]));
@@ -75,6 +79,8 @@ export const listShowcaseCards = createServerFn({ method: "GET" }).handler(async
         bio: (r["bio"] as string | null) ?? null,
         avatarUrl: (r["avatar_url"] as string | null) ?? null,
         verified: Boolean(r["verified"]),
+        theme: String(r["theme"] ?? ""),
+        display: showcaseDisplay(prefs, Boolean(r["is_business"]), Boolean(r["is_influencer"]), /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(String(r["subdomain_alias"] ?? ""))),
       }];
     });
   } catch (e) {

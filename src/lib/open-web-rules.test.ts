@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bioContainsRoutLink, isBioVerifiable } from "@/lib/open-web-rules";
+import { bioContainsRoutLink, isBioVerifiable, isMemberRoutHost } from "@/lib/open-web-rules";
 
 describe("bio link verification", () => {
   it("matches the exact link", () => {
@@ -22,5 +22,16 @@ describe("bio link verification", () => {
   });
   it("supports Chess.com", () => {
     expect(isBioVerifiable("chesscom")).toBe(true);
+  });
+  it.each(["anna.rout.be", "anna.u.rout.be", "anna.r.rout.be"])("accepts the exact member host %s", (host) => {
+    expect(bioContainsRoutLink(`<a href="https://${host}/">ROUT</a>`, "anna")).toBe(true);
+    expect(isMemberRoutHost(host, "anna")).toBe(true);
+  });
+  it("accepts the free profile path", () => {
+    expect(bioContainsRoutLink("https://rout.be/u/anna", "anna")).toBe(true);
+  });
+  it.each(["other.anna.rout.be", "anna.rout.be.evil.com", "annabel.u.rout.be", "evilrout.be/anna", "https://evil.com/rout.be/anna", "https://rout.be@evil.com/anna"])("rejects lookalike proof %s", (link) => {
+    expect(bioContainsRoutLink(link, "anna")).toBe(false);
+    expect(isMemberRoutHost(link, "anna")).toBe(false);
   });
 });

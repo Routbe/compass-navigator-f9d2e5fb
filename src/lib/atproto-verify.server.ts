@@ -5,6 +5,8 @@
  * the network's official AppView API, links back to the member's ROUT page.
  */
 
+import { bioContainsRoutLink, isMemberRoutHost, isPublicHost } from "./open-web-rules";
+
 export type AtNetwork = {
   id: "bluesky" | "wsocial";
   label: string;
@@ -43,12 +45,13 @@ async function resolveViaDns(handle: string): Promise<string | null> {
   try {
     const res = await fetch(`https://cloudflare-dns.com/dns-query?name=_atproto.${handle}&type=TXT`, {
       headers: { accept: "application/dns-json" },
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return null;
     const json = (await res.json()) as { Answer?: { data: string }[] };
     for (const a of json.Answer ?? []) {
-      const m = a.data.replace(/"/g, "").match(/^did=(did:[a-z]+:[a-zA-Z0-9._:%-]+)$/);
-      if (m) return m[1];
+      const did = didFromTxt(a.data);
+      if (did) return did;
     }
   } catch {
     /* fall through */
@@ -58,7 +61,9 @@ async function resolveViaDns(handle: string): Promise<string | null> {
 
 async function resolveViaWellKnown(handle: string): Promise<string | null> {
   try {
-    const res = await fetch(`https://${handle}/.well-known/atproto-did`, { redirect: "error" });
+    const { assertPublicHost } = await import("./safe-fetch.server");
+    if (!isPublicHost(handle) || !(await assertPublicHost(handle))) return null;
+    const res = await fetch(`https://${handle}/.well-known/atproto-did`, { redirect: "error", signal: AbortSignal.timeout(8000) });
     if (!res.ok) return null;
     const did = (await res.text()).trim();
     return /^did:[a-z]+:[a-zA-Z0-9._:%-]+$/.test(did) ? did : null;
@@ -68,7 +73,20 @@ async function resolveViaWellKnown(handle: string): Promise<string | null> {
 }
 
 export async function resolveAtHandle(handle: string): Promise<string | null> {
+  if (!HANDLE_RE.test(handle) || !isPublicHost(handle)) return null;
   return (await resolveViaDns(handle)) ?? (await resolveViaWellKnown(handle));
+}
+
+/** DNS JSON encodes TXT records as one or more quoted character strings. */
+export function didFromTxt(raw: string): string | null {
+  let value = raw.trim();
+  if (value.startsWith('"')) {
+    const segments = value.match(/"(?:[^"\\]|\\.)*"/g);
+    if (!segments || value.replace(/"(?:[^"\\]|\\.)*"/g, "").trim()) return null;
+    try { value = segments.map((s) => JSON.parse(s) as string).join(""); } catch { return null; }
+  }
+  const match = /^did=(did:[a-z]+:[a-zA-Z0-9._:%-]+)$/.exec(value);
+  return match?.[1] ?? null;
 }
 
 export type AtVerifyResult =
@@ -93,9 +111,7 @@ export async function verifyAtHandle(
     const p = (await res.json()) as { handle?: string; description?: string };
     if ((p.handle ?? "").toLowerCase() !== handle) return { ok: false, reason: "unresolved" };
     const r = routHandle.toLowerCase().replace(/^@/, "");
-    const bio = (p.description ?? "").toLowerCase();
-    const linked = handle.endsWith(`.${r}.rout.be`) || handle === `${r}.rout.be` ||
-      [`rout.be/${r}`, `rout.be/u/${r}`].some((n) => bio.includes(n));
+    const linked = isMemberRoutHost(handle, r) || bioContainsRoutLink(p.description, r);
     return linked ? { ok: true, did, handle, network: networkId } : { ok: false, reason: "link_missing" };
   } catch {
     return { ok: false, reason: "no_profile" };
