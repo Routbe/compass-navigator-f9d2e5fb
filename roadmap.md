@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Quality follow-up: verify unfinished Studio edits, repair live example fidelity and profile QR entry, test deterministic subdomain checks and mobile public flows
 - [ ] Studio: drawn top-level pictograms, remove duplicate QR settings, inline Knopvorm/Typografie customize controls, faithful Live examples
 - [ ] Anonymous questions: avatar answer stories, per-answer ROUT visibility and supported sharing; unsupported automatic external stories marked coming soon
 - [ ] Domains: Bluesky handle failure, subdomain Mastodon verification, Vercel nested subdomain routing and honest fallback/recovery opt-in
