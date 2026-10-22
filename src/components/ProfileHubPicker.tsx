@@ -52,7 +52,7 @@ export function ProfileHubPicker({ values, onChange }: Props) {
     }
   }
 
-  const origin = typeof window === "undefined" ? "https://rout.be" : window.location.origin;
+  const origin = "https://rout.be";
   const host = origin.replace(/^https?:\/\//, "");
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 # Roadmap
-- [ ] Quality follow-up: verify unfinished Studio edits, repair live example fidelity and profile QR entry, test deterministic subdomain checks and mobile public flows
+- [ ] Quality follow-up: live example rendering and deterministic subdomain rules repaired; 690 existing tests pass; authenticated Studio and real DNS checks remain
 - [ ] Studio: drawn top-level pictograms, remove duplicate QR settings, inline Knopvorm/Typografie customize controls, faithful Live examples
 - [ ] Anonymous questions: avatar answer stories, per-answer ROUT visibility and supported sharing; unsupported automatic external stories marked coming soon
 - [ ] Domains: Bluesky handle failure, subdomain Mastodon verification, Vercel nested subdomain routing and honest fallback/recovery opt-in
@@ -8,6 +8,7 @@
 - [ ] Availability/recovery and business application emails — sender setup and delivery verification required; pricing awaits confirmed fee
 - [x] Mobile dashboard heading: text uses full width, actions underneath; QR fills/logo settings retained in live and draft storage, shared SVG/PNG embed gradients
 - [ ] Signed-in dashboard and QR save → profile share check — waits on an active ROUT session; renderer/mobile public checks and 17 focused tests pass
+- [x] Profile QR designer isolation: save uses the active rendered design, delayed loading respects local edits, saved profile queries refresh, QR targets always use rout.be
 - [ ] Studio revision: click-again page switch, folder symbols, inline typography control, questions/guestbook in content with visibility toggles, inline granted badges and recipient email
 - [ ] Uploaded gift/credential brief: db/99 prepared, awaiting exact Neon change confirmation; badge implementation and API still pending
 - [ ] Admin gifts: new fixed/percentage form, private username lookup, preview, resend and mail-status handling implemented; real admin-session creation and mail delivery unverified
