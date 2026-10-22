@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Link2 } from "lucide-react";
 import { Link } from "@/lib/router-compat";
 import { TrackingPanel, TrackedQR } from "@/components/TrackingPanel";
@@ -8,7 +8,7 @@ import { QRPreview } from "@/components/QRPreview";
 import { QRTypeSelector, QRType } from "@/components/QRTypeSelector";
 import { QRTypeSheet } from "@/components/QRTypeSheet";
 import { useI18n } from "@/lib/i18n";
-import { publishQrDesign, currentProfileQrStyle } from "@/lib/qr-design-bridge";
+import { ProfileQrDesignContext, toProfileQrStyle } from "@/lib/qr-design-bridge";
 import { getQrSettingsFn } from "@/lib/qr-settings.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/useAuth";
@@ -92,15 +92,18 @@ const Index = () => {
   const [logoSize, setLogoSize] = useState(0.4);
   const [logoMargin, setLogoMargin] = useState(10);
   const [hideBackgroundDots, setHideBackgroundDots] = useState(true);
+  const profileQrStyle = useMemo(() => toProfileQrStyle({ fgColor, bgColor, dotStyle, outerCornerStyle, innerCornerStyle, bgGradient, logo, logoSize, logoMargin, hideBackgroundDots }), [fgColor, bgColor, dotStyle, outerCornerStyle, innerCornerStyle, bgGradient, logo, logoSize, logoMargin, hideBackgroundDots]);
+  const designKey = JSON.stringify(profileQrStyle);
+  const latestDesignKey = useRef(designKey);
   useEffect(() => {
-    publishQrDesign({ fgColor, bgColor, dotStyle, outerCornerStyle, innerCornerStyle, bgGradient, logo, logoSize, logoMargin, hideBackgroundDots });
-  }, [fgColor, bgColor, dotStyle, outerCornerStyle, innerCornerStyle, bgGradient, logo, logoSize, logoMargin, hideBackgroundDots]);
+    latestDesignKey.current = designKey;
+  }, [designKey]);
   useEffect(() => {
     if (qrType !== "social" || !user) return;
     let cancelled = false;
-    const before = JSON.stringify(currentProfileQrStyle());
+    const before = latestDesignKey.current;
     void loadQrSettings().then(style => {
-      if (cancelled || !style || before !== JSON.stringify(currentProfileQrStyle())) return;
+      if (cancelled || !style || before !== latestDesignKey.current) return;
       setFgColor(style.fgColor);
       setBgColor(style.bgColor);
       setBgGradient(style.bgGradient ?? null);
@@ -394,6 +397,7 @@ const Index = () => {
   };
 
   return (
+    <ProfileQrDesignContext.Provider value={profileQrStyle}>
     <AppLayout width="full" trustBadges>
       {/* Desktop app-shell: a strict 3-column grid so no pane can overlap another. */}
       <div className="grid w-full max-w-full grid-cols-1 overflow-x-hidden lg:h-[calc(100vh-4rem)] lg:grid-cols-[320px_minmax(0,1fr)_340px] lg:overflow-hidden xl:grid-cols-[360px_minmax(0,1fr)_400px]">
@@ -651,6 +655,7 @@ const Index = () => {
 
       <ValuesSection />
     </AppLayout>
+    </ProfileQrDesignContext.Provider>
   );
 };
 

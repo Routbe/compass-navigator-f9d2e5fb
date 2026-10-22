@@ -1,10 +1,11 @@
 import type { ProfileQrStyle, QrCornerStyle } from "@/lib/profile-qr";
 import { normalizeQrSettings } from "@/lib/qr-settings";
+import { createContext } from "react";
 
 /**
  * The /qr generator keeps its style in page state; the profile-hub picker sits
- * deep inside the form. This bridge lets the picker's "Opslaan" read the full
- * design currently on screen (fill, shapes, corners, logo).
+ * deep inside the form. Context binds its save action to this designer's
+ * current render, never to another page instance or a delayed effect.
  */
 export interface GeneratorDesign {
   fgColor: string;
@@ -19,11 +20,7 @@ export interface GeneratorDesign {
   hideBackgroundDots?: boolean;
 }
 
-let current: GeneratorDesign | null = null;
-
-export function publishQrDesign(design: GeneratorDesign): void {
-  current = design;
-}
+export const ProfileQrDesignContext = createContext<ProfileQrStyle | null>(null);
 
 const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
@@ -50,6 +47,3 @@ export function toProfileQrStyle(design: GeneratorDesign | null): ProfileQrStyle
   return normalizeQrSettings(raw) ?? { fgColor: fg, bgColor: bg, cornerStyle, emblem: false };
 }
 
-export function currentProfileQrStyle(): ProfileQrStyle {
-  return toProfileQrStyle(current);
-}
