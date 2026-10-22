@@ -7,7 +7,7 @@
 - [ ] Admin: personal/workspace allowed handles, handle locking, identity correction/revocation/free retry, active/featured curation
 - [ ] Availability/recovery and business application emails — sender setup and delivery verification required; pricing awaits confirmed fee
 - [x] Mobile dashboard heading: text uses full width, actions underneath; QR fills/logo settings retained in live and draft storage, shared SVG/PNG embed gradients
-- [ ] Signed-in dashboard and QR save → profile share check — waits on an active ROUT session; renderer/mobile public checks and 17 focused tests pass
+- [ ] Signed-in dashboard and QR save → profile share check — waits on an active ROUT session; 3 designer handoff regressions and 9 persistence tests pass; browser confirms solid/transparent/gradient SVG+PNG without an invented emblem, no page errors or horizontal overflow at 320/384px on QR/about/Studio/sign-in
 - [x] Profile QR designer isolation: save uses the active rendered design, delayed loading respects local edits, saved profile queries refresh, QR targets always use rout.be
 - [ ] Studio revision: click-again page switch, folder symbols, inline typography control, questions/guestbook in content with visibility toggles, inline granted badges and recipient email
 - [ ] Uploaded gift/credential brief: db/99 prepared, awaiting exact Neon change confirmation; badge implementation and API still pending
