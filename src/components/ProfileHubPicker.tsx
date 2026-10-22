@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { BadgeCheck, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@/lib/router-compat";
@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { useServerFn } from "@tanstack/react-start";
 import { getStudioProfile } from "@/lib/studio-profile.functions";
 import { saveQrSettingsFn } from "@/lib/qr-settings.functions";
-import { currentProfileQrStyle } from "@/lib/qr-design-bridge";
+import { ProfileQrDesignContext } from "@/lib/qr-design-bridge";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { HANDLE_MIN_LENGTH, handleIssue, normalizeHandle, profilePath } from "@/lib/profile";
 
@@ -30,11 +31,17 @@ export function ProfileHubPicker({ values, onChange }: Props) {
   const [saved, setSaved] = useState(false);
   const loadProfile = useServerFn(getStudioProfile);
   const saveQr = useServerFn(saveQrSettingsFn);
+  const design = useContext(ProfileQrDesignContext);
+  const queryClient = useQueryClient();
+
+  useEffect(() => { setSaved(false); }, [design]);
 
   async function saveDesign() {
+    if (!design || saving) return;
     setSaving(true);
     try {
-      await saveQr({ data: currentProfileQrStyle() });
+      await saveQr({ data: design });
+      await queryClient.invalidateQueries({ predicate: query => query.queryKey.some(key => typeof key === "string" && /profile|studio|draft/.test(key)) });
       setSaved(true);
       toast.success("Profiel-QR opgeslagen");
       setTimeout(() => setSaved(false), 2500);
@@ -143,7 +150,7 @@ export function ProfileHubPicker({ values, onChange }: Props) {
       <Button
         type="button"
         onClick={() => void saveDesign()}
-        disabled={saving || !user}
+        disabled={saving || !user || !design}
         className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-foreground text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saved ? <Check className="h-4 w-4" /> : null}

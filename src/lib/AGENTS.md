@@ -29,6 +29,7 @@
 - Stamps: lock links before redeeming in one gateway transaction; enforce public profile visibility. Why: no cap overruns or private collections leaked.
 - Profile sections use profile-section-blocks.ts and blocks; explicit hidden/scheduled sections suppress fallbacks. Why: no duplicate or resurrected content.
 - Standalone profile QR saves update live settings and the private draft atomically, advancing draft revision; sharing uses the saved generator settings. Why: stale Studio publication must not overwrite the QR design.
+- Profile QR save controls read the active generator's React context, not module-global state; saved-style hydration compares only that instance's edits. Why: immediate saves and multiple designer instances must not store a default or unrelated design.
 - Showcase cards expose a narrow normalized presentation subset and share ShowcaseIdentity rendering; first-party avatar paths stay local and remote images use the allowlist proxy. Why: live examples match profile styling without exposing private settings or visitor IPs.
 - AT ownership checks use exact member ROUT hosts and the shared deterministic bio parser; well-known fetches validate public DNS addresses and refuse redirects. Why: nested lookalikes and internal hosts must never establish ownership.
 - Community stats are live counts; reviews show only when `approved` (db/65); empty sections hide. Approving a verification cancels that user's other open same-tier requests (`verification-dedupe.ts`). Why: no fake social proof or duplicate work.
